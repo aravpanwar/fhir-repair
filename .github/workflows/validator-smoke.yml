@@ -17,14 +17,13 @@ jobs:
       hapi:
         # Pinned HAPI version. Bumping this is a deliberate change and should
         # be paired with a re-run of the benchmark to detect validator drift.
+        # No service-level healthcheck: the HAPI image does not ship curl, so
+        # any in-container healthcheck command we could write would fail to
+        # execute. The "Wait for HAPI" step below polls from the runner
+        # instead, which has curl and reaches the container via mapped port.
         image: hapiproject/hapi:v7.4.0
         ports:
           - 8080:8080
-        options: >-
-          --health-cmd "curl -f http://localhost:8080/fhir/metadata || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 30
 
     steps:
       - uses: actions/checkout@v4
@@ -39,15 +38,20 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Wait for HAPI
+        # HAPI typically takes 60-120s to come up. We give it 5 minutes
+        # before declaring failure.
         run: |
           for i in $(seq 1 60); do
             if curl -sf http://localhost:8080/fhir/metadata > /dev/null; then
-              echo "HAPI is up"
+              echo "HAPI is up after ${i} attempts"
               exit 0
             fi
             sleep 5
           done
           echo "HAPI did not start in time"
+          # Dump container logs to aid debugging when it fails.
+          docker ps -a
+          docker logs "$(docker ps -aqf ancestor=hapiproject/hapi:v7.4.0)" || true
           exit 1
 
       - name: Run integration tests
