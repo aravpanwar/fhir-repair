@@ -27,6 +27,7 @@ dispatch_version: "1.0.0"
 # docs/dispatch-table.md for the full reference.
 strategies:
   invalid-date-format: deterministic.normalize_date
+  invalid-decimal-format: deterministic.normalize_decimal
   unexpected-array: deterministic.unwrap_singleton
   invalid-code-binding: llm.suggest_terminology_match
   missing-required-element: refuse

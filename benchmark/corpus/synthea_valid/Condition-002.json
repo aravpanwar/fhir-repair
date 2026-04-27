@@ -1,0 +1,36 @@
+{
+  "resourceType": "Condition",
+  "id": "starter-condition-002",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "resolved",
+        "display": "Resolved"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed",
+        "display": "Confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "10509002",
+        "display": "Acute bronchitis"
+      }
+    ]
+  },
+  "subject": {
+    "reference": "Patient/starter-patient-002"
+  },
+  "onsetDateTime": "2024-02-14",
+  "abatementDateTime": "2024-02-28"
+}

@@ -9,6 +9,6 @@ guard determines which permission each strategy exercises and whether the
 guard grants it.
 """
 
-from fhir_repair.strategies.llm.runner import LLMStrategy
+from fhir_repair.strategies.llm.runner import LLMStrategy, register_default_llm_strategies
 
-__all__ = ["LLMStrategy"]
+__all__ = ["LLMStrategy", "register_default_llm_strategies"]

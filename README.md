@@ -99,6 +99,7 @@ fhir_version: "4.0.1"
 
 strategies:
   invalid-date-format: deterministic.normalize_date
+  invalid-decimal-format: deterministic.normalize_decimal
   unexpected-array: deterministic.unwrap_singleton
   invalid-code-binding: llm.suggest_terminology_match
   missing-required-element: refuse
@@ -124,19 +125,23 @@ reference.
 
 This is a v0.1 pre-release. Current capabilities:
 
-- 2 deterministic strategies: `normalize_date`, `unwrap_singleton`
+- 3 deterministic strategies: `normalize_date`, `normalize_decimal`,
+  `unwrap_singleton`
+- 2 LLM strategies (opt-in via dispatch table):
+  `llm.suggest_terminology_match`, generic `llm`
 - HAPI REST validator adapter (pinned to HAPI 7.4.0)
 - Anthropic LLM provider adapter
 - JSON Lines audit log with sealed v1 schema
 - CLI and Python library
+- Starter benchmark corpus (6 hand-curated R4 resources)
 
 Deferred to later releases:
 
 - FastAPI HTTP service
-- Additional deterministic strategies (cardinality, telecom, codeable concept,
+- Additional deterministic strategies (telecom, codeable concept,
   identifier system, invariant)
 - Additional LLM providers (OpenAI, Bedrock, on-prem)
-- Wild-sample empirical study corpus
+- Full Synthea-generated benchmark corpus and wild-sample empirical study corpus
 - Public model-vs-prompt benchmark leaderboard
 
 ## Deployment and compliance

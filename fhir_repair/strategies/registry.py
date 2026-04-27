@@ -76,9 +76,10 @@ def default_registry() -> StrategyRegistry:
     environments without the optional `anthropic` dependency installed.
     """
     # Imports are local so the registry module itself stays import-light.
-    from fhir_repair.strategies.deterministic import cardinality, date
+    from fhir_repair.strategies.deterministic import cardinality, date, decimal
 
     registry = StrategyRegistry()
     registry.register_module(date)
     registry.register_module(cardinality)
+    registry.register_module(decimal)
     return registry

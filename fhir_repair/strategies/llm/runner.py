@@ -177,3 +177,56 @@ the correct value with high confidence, respond with
 Never invent clinical content not present in the input. Reformat and
 constrained-set selection are the only acceptable transformations.
 """
+
+
+# Path to the prompt templates shipped with the package. Strategies built by
+# `register_default_llm_strategies` use this directory; users can supply
+# their own prompts by constructing `LLMStrategy` directly with a different
+# `prompt_path`.
+_PROMPTS_DIR = Path(__file__).parent / "prompts"
+
+
+def register_default_llm_strategies(
+    registry: Any,
+    provider: LLMProvider,
+    prompt_version: str = "v1",
+    retriever: SpecRetriever | None = None,
+) -> None:
+    """Register the v0.1 LLM strategies on `registry`.
+
+    Currently registers two:
+
+      - `llm.suggest_terminology_match`: pick a code from a bound ValueSet
+        when the user-provided value is interpretable (e.g., "M" maps to
+        "male" under AdministrativeGender).
+      - `llm`: generic catch-all using a less specific prompt template.
+        Use sparingly and pair with conservative hallucination_guard
+        permissions.
+
+    Both require `allow_bind_required_valueset` by default. Adjust the
+    config's permissions to enable or disable.
+    """
+    registry.register(
+        LLMStrategy(
+            name="llm.suggest_terminology_match",
+            version="1.0.0",
+            permission="allow_bind_required_valueset",
+            risk="medium",
+            prompt_path=_PROMPTS_DIR / "repair_terminology.v1.jinja",
+            prompt_version=prompt_version,
+            provider=provider,
+            retriever=retriever,
+        )
+    )
+    registry.register(
+        LLMStrategy(
+            name="llm",
+            version="1.0.0",
+            permission="allow_bind_required_valueset",
+            risk="medium",
+            prompt_path=_PROMPTS_DIR / "repair_unknown.v1.jinja",
+            prompt_version=prompt_version,
+            provider=provider,
+            retriever=retriever,
+        )
+    )

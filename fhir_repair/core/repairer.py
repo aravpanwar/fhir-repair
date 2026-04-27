@@ -29,6 +29,7 @@ from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, RepairResult, ValidationError
 
 if TYPE_CHECKING:
+    from fhir_repair.llm.base import LLMProvider
     from fhir_repair.strategies.registry import StrategyRegistry
     from fhir_repair.validators.base import Validator
 
@@ -46,6 +47,7 @@ class Repairer:
         registry: StrategyRegistry | None = None,
         config: RepairConfig | None = None,
         guard: HallucinationGuard | None = None,
+        llm_provider: LLMProvider | None = None,
     ) -> None:
         # Imported lazily to keep module-level import graph small and to
         # avoid a circular import between core and strategies.
@@ -56,6 +58,44 @@ class Repairer:
         self._config = config or RepairConfig()
         self._guard = guard or self._config.hallucination_guard.to_guard()
         self._resolver = StrategyResolver(self._config.strategies)
+
+        # If the dispatch table references LLM strategies, ensure they are
+        # registered. The user can either pass a pre-built provider or let
+        # us build one from config; either way we fail loudly at construction
+        # time if the references can't be satisfied, rather than discovering
+        # the mismatch mid-repair.
+        if self._dispatch_uses_llm():
+            self._register_llm_strategies(llm_provider)
+
+    def _dispatch_uses_llm(self) -> bool:
+        """True if any dispatch table value names an LLM strategy."""
+        return any(
+            value == "llm" or value.startswith("llm.") for value in self._config.strategies.values()
+        )
+
+    def _register_llm_strategies(
+        self,
+        provider: LLMProvider | None,
+    ) -> None:
+        """Build (or accept) the LLM provider and register the LLM strategies.
+
+        Skips registration of strategies that are already in the registry,
+        so a caller who pre-registered custom LLM strategies on the registry
+        keeps full control.
+        """
+        from fhir_repair.llm import build_llm_provider
+        from fhir_repair.strategies.llm import register_default_llm_strategies
+
+        resolved_provider = provider or build_llm_provider(self._config.llm)
+
+        # `register_default_llm_strategies` adds two strategies. If the user
+        # supplied a custom registry that already has them (or replacements),
+        # we honour that and skip; otherwise we register defaults.
+        existing = set(self._registry.names())
+        defaults = {"llm", "llm.suggest_terminology_match"}
+        if defaults.issubset(existing):
+            return
+        register_default_llm_strategies(self._registry, resolved_provider)
 
     def repair(self, resource: dict[str, Any]) -> RepairResult:
         """Repair a resource, returning the fix and the audit log."""

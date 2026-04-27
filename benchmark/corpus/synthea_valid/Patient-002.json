@@ -1,0 +1,32 @@
+{
+  "resourceType": "Patient",
+  "id": "starter-patient-002",
+  "active": true,
+  "name": [
+    {
+      "use": "official",
+      "family": "Sample",
+      "given": ["Jamie", "Lee"]
+    }
+  ],
+  "gender": "female",
+  "birthDate": "1972-11-04",
+  "telecom": [
+    {
+      "system": "email",
+      "value": "jamie.sample@example.test",
+      "use": "work"
+    }
+  ],
+  "address": [
+    {
+      "use": "home",
+      "type": "both",
+      "line": ["123 Test Street"],
+      "city": "Anytown",
+      "state": "NY",
+      "postalCode": "12345",
+      "country": "US"
+    }
+  ]
+}
