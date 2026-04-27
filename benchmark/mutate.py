@@ -179,7 +179,7 @@ def _scalar_field_names(resource: dict[str, Any]) -> list[str]:
     return [
         name
         for name, value in resource.items()
-        if name not in skip and not isinstance(value, (list, dict))
+        if name not in skip and not isinstance(value, list | dict)
     ]
 
 
