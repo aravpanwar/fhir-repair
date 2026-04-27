@@ -1,0 +1,60 @@
+# Project-private notes (never committed)
+CLAUDE.md
+Project_Summary.md
+
+# Audit logs (may contain PHI when input did)
+audit-logs/
+*.audit.jsonl
+
+# Terminology cache
+tx-cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing and coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files (may contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Synthea generated data (regenerated from documented seed)
+benchmark/corpus/synthea_raw/
+
+# Build artifacts
+*.log

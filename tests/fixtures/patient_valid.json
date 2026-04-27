@@ -1,0 +1,21 @@
+{
+  "resourceType": "Patient",
+  "id": "example-valid",
+  "active": true,
+  "name": [
+    {
+      "use": "official",
+      "family": "Tester",
+      "given": ["Alex"]
+    }
+  ],
+  "gender": "male",
+  "birthDate": "1990-03-05",
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-0100",
+      "use": "home"
+    }
+  ]
+}

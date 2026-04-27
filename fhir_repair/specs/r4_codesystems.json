@@ -1,0 +1,52 @@
+{
+  "http://hl7.org/fhir/administrative-gender": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "unknown": "Unknown"
+  },
+  "http://hl7.org/fhir/contact-point-system": {
+    "phone": "Phone",
+    "fax": "Fax",
+    "email": "Email",
+    "pager": "Pager",
+    "url": "URL",
+    "sms": "SMS",
+    "other": "Other"
+  },
+  "http://hl7.org/fhir/contact-point-use": {
+    "home": "Home",
+    "work": "Work",
+    "temp": "Temp",
+    "old": "Old",
+    "mobile": "Mobile"
+  },
+  "http://hl7.org/fhir/address-use": {
+    "home": "Home",
+    "work": "Work",
+    "temp": "Temporary",
+    "old": "Old / Incorrect",
+    "billing": "Billing"
+  },
+  "http://hl7.org/fhir/address-type": {
+    "postal": "Postal",
+    "physical": "Physical",
+    "both": "Postal & Physical"
+  },
+  "http://hl7.org/fhir/identifier-use": {
+    "usual": "Usual",
+    "official": "Official",
+    "temp": "Temp",
+    "secondary": "Secondary",
+    "old": "Old"
+  },
+  "http://hl7.org/fhir/name-use": {
+    "usual": "Usual",
+    "official": "Official",
+    "temp": "Temp",
+    "nickname": "Nickname",
+    "anonymous": "Anonymous",
+    "old": "Old",
+    "maiden": "Name changed for Marriage"
+  }
+}

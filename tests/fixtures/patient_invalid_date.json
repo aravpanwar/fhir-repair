@@ -1,0 +1,14 @@
+{
+  "resourceType": "Patient",
+  "id": "example-invalid-date",
+  "active": true,
+  "name": [
+    {
+      "use": "official",
+      "family": "Tester",
+      "given": ["Alex"]
+    }
+  ],
+  "gender": "male",
+  "birthDate": "1990-3-5"
+}

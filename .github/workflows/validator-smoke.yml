@@ -1,0 +1,56 @@
+name: Validator smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "fhir_repair/validators/**"
+      - "docker/**"
+      - ".github/workflows/validator-smoke.yml"
+
+jobs:
+  hapi-rest:
+    runs-on: ubuntu-latest
+
+    services:
+      hapi:
+        # Pinned HAPI version. Bumping this is a deliberate change and should
+        # be paired with a re-run of the benchmark to detect validator drift.
+        image: hapiproject/hapi:v7.4.0
+        ports:
+          - 8080:8080
+        options: >-
+          --health-cmd "curl -f http://localhost:8080/fhir/metadata || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Wait for HAPI
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/fhir/metadata > /dev/null; then
+              echo "HAPI is up"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "HAPI did not start in time"
+          exit 1
+
+      - name: Run integration tests
+        env:
+          HAPI_BASE_URL: http://localhost:8080/fhir
+        run: pytest -m integration

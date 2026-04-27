@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>fhir-repair benchmark leaderboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: 0.25rem; }
+    .subtitle { color: #666; margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; }
+    th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #f5f5f5; }
+    tbody tr:hover { background: #fafafa; }
+    .empty { color: #999; font-style: italic; padding: 2rem 0; text-align: center; }
+    code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>fhir-repair benchmark</h1>
+  <p class="subtitle">Validator pass rate, ground-truth match rate, and latency by model and prompt strategy.</p>
+
+  <p>This page is rendered from <code>results.json</code>. Run the benchmark with:</p>
+
+  <pre><code>python -m benchmark.run \
+    --corpus benchmark/corpus/synthea_mutated \
+    --manifest benchmark/corpus/synthea_mutated/manifest.json \
+    --config examples/repair-config.yaml \
+    --out benchmark/results.json</code></pre>
+
+  <table id="leaderboard">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Prompt</th>
+        <th>Validator pass</th>
+        <th>Ground-truth match</th>
+        <th>Mean latency</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body">
+      <tr><td colspan="5" class="empty">No results yet. Run the benchmark to populate this table.</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    fetch('results.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.summary) return;
+        const body = document.getElementById('leaderboard-body');
+        body.innerHTML = '';
+        const meta = data.metadata || {};
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${meta.llm_model || 'unknown'}</td>
+          <td>${meta.prompt_version || 'v1'}</td>
+          <td>${(data.summary.validator_pass_rate * 100).toFixed(1)}%</td>
+          <td>${(data.summary.ground_truth_match_rate * 100).toFixed(1)}%</td>
+          <td>${data.summary.mean_duration_ms} ms</td>
+        `;
+        body.appendChild(row);
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>

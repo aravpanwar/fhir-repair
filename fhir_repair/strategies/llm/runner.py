@@ -1,0 +1,179 @@
+"""Generic LLM strategy runner.
+
+Wraps a prompt template, an LLMProvider, and (optionally) a RAG retriever
+into a `Strategy`. The runner handles:
+
+  - Loading and rendering the prompt template
+  - Calling the provider with a structured PromptSegment list, marking
+    stable segments for caching
+  - Parsing the provider's response into a fix
+  - Applying the fix to the resource and producing a RepairAction with
+    full LLM provenance recorded
+
+Specific LLM strategies (e.g. terminology binding) are instances of
+`LLMStrategy` configured with the right prompt template and parser.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+from jinja2 import Template
+
+from fhir_repair.core.audit import hash_prompt
+from fhir_repair.core.fhirpath import get_at_path, set_at_path
+from fhir_repair.core.models import (
+    PromptSegment,
+    RepairAction,
+    ValidationError,
+)
+from fhir_repair.llm.base import LLMProvider
+from fhir_repair.strategies.base import refused
+from fhir_repair.strategies.llm.rag import SpecRetriever
+
+# Type for a parser that takes the LLM's raw text and returns the new value
+# at the error location. May raise to signal "could not parse" or
+# "untrustworthy output"; the runner converts that into a refusal.
+ResponseParser = Callable[[str], Any]
+
+
+def _default_parser(text: str) -> Any:
+    """Parse `{"value": <new_value>}` JSON from the LLM response.
+
+    Strict by design: anything that is not exactly this shape raises, which
+    becomes a refusal in the runner. Free-text LLM output should not be
+    silently treated as a fix.
+    """
+    obj = json.loads(text)
+    if not isinstance(obj, dict) or "value" not in obj:
+        raise ValueError("expected JSON object with 'value' key")
+    return obj["value"]
+
+
+class LLMStrategy:
+    """A `Strategy` implementation backed by a prompt template + LLM provider."""
+
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        permission: str,
+        risk: str,
+        prompt_path: Path,
+        prompt_version: str,
+        provider: LLMProvider,
+        retriever: SpecRetriever | None = None,
+        parser: ResponseParser = _default_parser,
+        system_prompt: str | None = None,
+    ) -> None:
+        self.name = name
+        self.version = version
+        self.permission = permission
+        self.risk = risk
+
+        self._template = Template(prompt_path.read_text(encoding="utf-8"))
+        self._prompt_version = prompt_version
+        self._provider = provider
+        self._retriever = retriever
+        self._parser = parser
+        self._system_prompt = system_prompt or _DEFAULT_SYSTEM_PROMPT
+
+    def apply(
+        self,
+        resource: dict[str, Any],
+        error: ValidationError,
+    ) -> RepairAction:
+        before = get_at_path(resource, error.location)
+
+        spec_excerpt = ""
+        if self._retriever is not None:
+            spec_excerpt = self._retriever.retrieve(error)
+
+        rendered = self._template.render(
+            resource=json.dumps(resource, separators=(",", ":")),
+            error=error,
+            spec_excerpt=spec_excerpt,
+            current_value=before,
+        )
+
+        # Stable segments (cacheable across calls) come first; volatile
+        # segments (per-resource content) come last. Anthropic caches the
+        # prefix up to and including the last stable segment; OpenAI auto-
+        # caches whatever prefix happens to repeat.
+        segments = [
+            PromptSegment(role="system", text=self._system_prompt, stable=True),
+        ]
+        if spec_excerpt:
+            segments.append(PromptSegment(role="system", text=spec_excerpt, stable=True))
+        segments.append(PromptSegment(role="user", text=rendered, stable=False))
+
+        start = time.perf_counter()
+        try:
+            completion = self._provider.complete(segments)
+        except Exception as exc:
+            return refused(
+                error,
+                self.name,
+                self.version,
+                self.permission,
+                before,
+                f"LLM call failed: {exc}",
+            )
+        latency_ms = int((time.perf_counter() - start) * 1000)
+
+        try:
+            new_value = self._parser(completion.text)
+        except Exception as exc:
+            return refused(
+                error,
+                self.name,
+                self.version,
+                self.permission,
+                before,
+                f"could not parse LLM response: {exc}",
+            )
+
+        set_at_path(resource, error.location, new_value)
+
+        action = RepairAction(
+            error=error,
+            strategy=self.name,
+            strategy_version=self.version,
+            risk=self.risk,  # type: ignore[arg-type]
+            permission_used=self.permission,
+            before=before,
+            after=new_value,
+            explanation=f"LLM ({completion.model}) produced replacement value.",
+            llm={
+                "provider": completion.provider,
+                "model": completion.model,
+                "prompt_version": self._prompt_version,
+                "prompt_hash": hash_prompt(rendered),
+                "input_tokens": completion.input_tokens,
+                "output_tokens": completion.output_tokens,
+                "cached_tokens": completion.cached_tokens,
+                "latency_ms": latency_ms,
+            },
+        )
+        return action
+
+
+# A short system prompt tuned for fix-the-broken-FHIR tasks. Sets the JSON
+# response contract enforced by `_default_parser`.
+_DEFAULT_SYSTEM_PROMPT = """\
+You are a FHIR R4 repair assistant. Given a resource with a single
+validation error and (optionally) the relevant spec excerpt, produce the
+correct value for the path indicated by the error.
+
+Respond with a single JSON object: {"value": <correct_value>}. Do not add
+commentary, markdown formatting, or explanation. If you cannot determine
+the correct value with high confidence, respond with
+{"value": null}; the system will mark the case unresolved.
+
+Never invent clinical content not present in the input. Reformat and
+constrained-set selection are the only acceptable transformations.
+"""

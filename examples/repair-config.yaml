@@ -1,0 +1,72 @@
+# Example repair configuration for fhir-repair.
+#
+# Copy this file, edit for your deployment, and pass it to the CLI:
+#
+#   fhir-repair fix patient.json --config repair-config.yaml --out fixed.json
+#
+# Environment variable references (e.g. ${LLM_API_KEY}) are expanded at
+# load time. Missing variables become empty strings.
+
+# Target profile (canonical URL). Leave null to validate against the base
+# resource definition only.
+target_profile: null
+
+# FHIR version. v0.1 supports R4 only.
+fhir_version: "4.0.1"
+
+# HAPI validator version pin. Used in audit log metadata for
+# reproducibility. Match this to the HAPI image you actually run.
+hapi_version: "7.4.0"
+
+# Dispatch table format version. Bumped when the strategies map shape
+# changes; users would migrate at that point.
+dispatch_version: "1.0.0"
+
+# Map of validation error codes to strategies. Resolution falls back to
+# `unknown-error` if a specific code is not listed. See
+# docs/dispatch-table.md for the full reference.
+strategies:
+  invalid-date-format: deterministic.normalize_date
+  unexpected-array: deterministic.unwrap_singleton
+  invalid-code-binding: llm.suggest_terminology_match
+  missing-required-element: refuse
+  unknown-error: refuse
+
+# LLM provider configuration. Credentials come from environment variables;
+# never inline them in this file.
+llm:
+  provider: ${LLM_PROVIDER}        # anthropic | openai | bedrock | on-prem
+  model: ${LLM_MODEL}              # provider-specific model identifier
+  temperature: 0.0
+  prompt_version: v1
+  endpoint: ${LLM_ENDPOINT}        # optional, for self-hosted / proxied endpoints
+  api_key: ${LLM_API_KEY}
+
+# Terminology service. `none` disables remote lookups; the local index
+# still answers queries against FHIR-internal CodeSystems.
+terminology:
+  service: none                    # none | tx-fhir-org | hapi-local | custom
+  endpoint: ${TX_ENDPOINT}
+  cache_dir: ./tx-cache
+
+# Hallucination guard permissions. Each defaults conservatively. Turn one
+# on only after deciding the risk is acceptable for your deployment.
+hallucination_guard:
+  allow_reformat: true
+  allow_bind_required_valueset: true
+  allow_bind_extensible_valueset: false
+  allow_add_missing_required_field: false
+  allow_change_existing_clinical_value: false
+
+# Loop bounds. `max_attempts` caps how many validate-fix-revalidate
+# iterations we run; `max_llm_calls_per_resource` caps the LLM calls
+# inside that loop. Both are correctness limits, not cost limits.
+limits:
+  max_llm_calls_per_resource: 5
+  max_attempts: 5
+
+# Audit log destination. JSONL files are written here, one per resource.
+# When repairing PHI, this directory contains PHI; secure it accordingly.
+logging:
+  audit_destination: ./audit-logs/
+  log_level: info

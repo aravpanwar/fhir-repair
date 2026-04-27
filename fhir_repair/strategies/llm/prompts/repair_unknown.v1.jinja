@@ -1,0 +1,25 @@
+A FHIR R4 resource failed validation. The error code is not one this system
+has a specialised strategy for, so we are asking you for a fix.
+
+Error code: {{ error.code }}
+Severity: {{ error.severity }}
+Path: {{ error.location }}
+Validator message: {{ error.message }}
+
+Current value at the path: {{ current_value | tojson }}
+
+{% if spec_excerpt -%}
+Relevant spec excerpt:
+{{ spec_excerpt }}
+{% endif -%}
+
+Full resource:
+{{ resource }}
+
+Task: produce the corrected value at the indicated path. Reformatting and
+constrained-set selection are acceptable. Do not invent clinical content
+that is not present in the input.
+
+If you cannot determine a confident fix, respond with {"value": null}.
+
+Respond with exactly one JSON object: {"value": <corrected_value>}.

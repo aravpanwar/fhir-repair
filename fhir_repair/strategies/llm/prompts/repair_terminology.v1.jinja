@@ -1,0 +1,20 @@
+A FHIR R4 resource has a code-binding error at path: {{ error.location }}
+
+Validator message: {{ error.message }}
+
+Current value at the path: {{ current_value | tojson }}
+
+{% if spec_excerpt -%}
+Relevant spec excerpt (for the bound ValueSet):
+{{ spec_excerpt }}
+{% endif -%}
+
+Full resource:
+{{ resource }}
+
+Task: choose the correct code from the bound ValueSet that best matches the
+current value. Do not invent a code that is not in the ValueSet. If no
+member of the ValueSet matches with high confidence, respond with
+{"value": null}.
+
+Respond with exactly one JSON object: {"value": "<chosen-code>"}.

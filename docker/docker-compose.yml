@@ -1,0 +1,53 @@
+# Local development stack.
+#
+# Starts a HAPI FHIR server (the validator backend) and, optionally, the
+# fhir-repair CLI image as a one-shot container. Most users just run
+# `docker compose up -d hapi` and use the CLI from their host.
+
+services:
+  hapi:
+    # Pinned version. Bumping HAPI here is a deliberate change and should
+    # be paired with a benchmark re-run because validator behaviour shifts
+    # within minor releases. Update validator-smoke.yml to match.
+    image: hapiproject/hapi:v7.4.0
+    container_name: fhir-repair-hapi
+    ports:
+      - "8080:8080"
+    environment:
+      # Enable the $validate operation explicitly. Some HAPI builds keep
+      # it off by default for performance reasons; we want it on.
+      hapi.fhir.validation.requests_enabled: "true"
+      # Persist HAPI's H2 database between restarts so warm-up time
+      # amortises across runs. For a stateless run, mount a tmpfs instead.
+      spring.datasource.url: "jdbc:h2:file:/data/h2;DB_CLOSE_DELAY=-1"
+    volumes:
+      - hapi-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/fhir/metadata || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  # Optional: build and run the CLI as a container. Most users will run
+  # the CLI on their host (faster iteration), but this profile is handy
+  # for one-shot demos.
+  fhir-repair:
+    profiles: [cli]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: fhir-repair:local
+    depends_on:
+      hapi:
+        condition: service_healthy
+    environment:
+      HAPI_BASE_URL: "http://hapi:8080/fhir"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_PROVIDER: "${LLM_PROVIDER:-anthropic}"
+      LLM_MODEL: "${LLM_MODEL:-claude-sonnet-4-6}"
+    volumes:
+      - ./in:/in:ro
+      - ./out:/out
+
+volumes:
+  hapi-data:

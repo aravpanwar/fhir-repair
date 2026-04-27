@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -m ruff check fhir_repair tests benchmark)",
+      "Bash(.venv/Scripts/python.exe -m ruff format --check fhir_repair tests benchmark)",
+      "Bash(.venv/Scripts/python.exe -m ruff format fhir_repair tests benchmark)"
+    ]
+  }
+}
