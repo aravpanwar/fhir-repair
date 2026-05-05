@@ -26,12 +26,28 @@ dispatch_version: "1.0.0"
 # `unknown-error` if a specific code is not listed. See
 # docs/dispatch-table.md for the full reference.
 strategies:
-  invalid-date-format: deterministic.normalize_date
-  invalid-decimal-format: deterministic.normalize_decimal
-  unexpected-array: deterministic.unwrap_singleton
-  invalid-code-binding: llm.suggest_terminology_match
-  missing-required-element: refuse
+  # HAPI emits the bare FHIR issue code `processing` for most malformed-
+  # value errors (date format, decimal format, singleton-wrapped scalar,
+  # etc.). The discriminator is in the diagnostics text, not the code, so
+  # we route `processing` through a chain of deterministic strategies.
+  # Each refuses cleanly when its preconditions do not match; the first
+  # non-refusing strategy wins.
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+
+  # Fallback for any error code we have not mapped explicitly. `refuse`
+  # is the conservative default. To use the LLM as a catch-all, set
+  # LLM_API_KEY in the environment, configure the llm: section below,
+  # and change this to `llm` (or `llm.suggest_terminology_match` for the
+  # terminology-binding-specific prompt).
   unknown-error: refuse
+
+  # Example LLM-routed entries (uncomment to enable; requires LLM
+  # credentials in the llm: section below):
+  #
+  # invalid-code-binding: llm.suggest_terminology_match
 
 # LLM provider configuration. Credentials come from environment variables;
 # never inline them in this file.

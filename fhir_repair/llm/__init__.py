@@ -37,9 +37,13 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
     if provider == "anthropic":
         from fhir_repair.llm.anthropic import AnthropicProvider
 
+        # Provide a default model when none is configured. The config
+        # type allows None so YAML expansion of an unset env var doesn't
+        # fail validation; the build function is the right place to apply
+        # provider-specific defaults.
         return AnthropicProvider(
             api_key=config.api_key or None,
-            model=config.model,
+            model=config.model or "claude-sonnet-4-6",
             endpoint=config.endpoint or None,
         )
 

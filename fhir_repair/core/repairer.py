@@ -68,10 +68,16 @@ class Repairer:
             self._register_llm_strategies(llm_provider)
 
     def _dispatch_uses_llm(self) -> bool:
-        """True if any dispatch table value names an LLM strategy."""
-        return any(
-            value == "llm" or value.startswith("llm.") for value in self._config.strategies.values()
-        )
+        """True if any dispatch table value names an LLM strategy.
+
+        Handles both single-string entries and chain (list-of-string)
+        entries.
+        """
+        for value in self._config.strategies.values():
+            ids = [value] if isinstance(value, str) else list(value)
+            if any(sid == "llm" or sid.startswith("llm.") for sid in ids):
+                return True
+        return False
 
     def _register_llm_strategies(
         self,
@@ -196,8 +202,8 @@ class Repairer:
             batch_actions: list[RepairAction] = []
             touched: set[str] = set()
 
-            for strategy_id, error in batch:
-                action = self._invoke_strategy(strategy_id, resource, error)
+            for chain, error in batch:
+                action = self._invoke_chain(chain, resource, error)
                 batch_actions.append(action)
                 touched.add(error.location)
 
@@ -246,13 +252,39 @@ class Repairer:
 
         return all_actions
 
+    def _invoke_chain(
+        self,
+        chain: list[str],
+        resource: dict[str, Any],
+        error: ValidationError,
+    ) -> RepairAction:
+        """Try each strategy in `chain` until one does not refuse.
+
+        A chain lets a single FHIR issue code map to several specific
+        strategies. Each strategy refuses cleanly when its preconditions
+        do not match (e.g., normalize_date refuses on non-date values),
+        and the dispatcher falls through to the next. Returns the first
+        non-refused action, or the last refusal if every link refused.
+        """
+        last_action: RepairAction | None = None
+        for strategy_id in chain:
+            action = self._invoke_strategy(strategy_id, resource, error)
+            if action.risk != "refused":
+                return action
+            last_action = action
+
+        # Every link refused. Return the final refusal so the audit log
+        # at least records the last attempt.
+        assert last_action is not None  # chain was non-empty by construction
+        return last_action
+
     def _invoke_strategy(
         self,
         strategy_id: str,
         resource: dict[str, Any],
         error: ValidationError,
     ) -> RepairAction:
-        """Look up and run a strategy, enforcing the hallucination guard."""
+        """Look up and run a single strategy, enforcing the hallucination guard."""
         strategy = self._registry.get(strategy_id)
 
         if not self._guard.is_allowed(strategy.permission):

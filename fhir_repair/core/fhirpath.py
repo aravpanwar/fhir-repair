@@ -30,6 +30,12 @@ import fhirpathpy
 # Matches a path segment: `name` or `name[42]`.
 _SEGMENT_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)(?:\[(\d+)\])?$")
 
+# FHIRPath choice-element notation: `<base>.ofType(<Type>)`. HAPI emits
+# this for polymorphic fields like `value[x]`, e.g. `Observation.value.
+# ofType(Quantity)`. The JSON property name is `<base><Type>` with the
+# type's first letter capitalised, e.g. `valueQuantity`.
+_OF_TYPE_RE = re.compile(r"\.ofType\(([A-Za-z][A-Za-z0-9]*)\)")
+
 
 def evaluate(resource: dict[str, Any], path: str) -> list[Any]:
     """Evaluate a FHIRPath expression against a resource.
@@ -49,8 +55,17 @@ def get_at_path(resource: dict[str, Any], path: str) -> Any:
     not apply FHIRPath collection flattening: a singleton-wrapped scalar
     comes back as a one-element list, which is what cardinality fixes
     need to see.
+
+    Returns None on syntactically unparseable paths. HAPI sometimes emits
+    forms we do not yet support, e.g. the abstract `<name>[x]` choice
+    notation that does not name a concrete type. Strategies that depend
+    on a concrete value handle the None case as a refusal, which routes
+    the error to the next chain entry or to unresolved.
     """
-    parts = _parse_simple_path(path)
+    try:
+        parts = _parse_simple_path(path)
+    except ValueError:
+        return None
 
     if parts and isinstance(parts[0], str) and parts[0] == resource.get("resourceType"):
         parts = parts[1:]
@@ -94,19 +109,39 @@ def _parse_simple_path(path: str) -> list[str | tuple[str, int]]:
     """Parse `Patient.contact[0].telecom[1].value` into a sequence of segments.
 
     Each segment is either a string (plain attribute) or a (name, index)
-    tuple (indexed attribute).
+    tuple (indexed attribute). FHIRPath choice-element notation is
+    canonicalised first: `Observation.value.ofType(Quantity).value`
+    becomes `Observation.valueQuantity.value`.
     """
     if not path:
         raise ValueError("Cannot parse an empty path")
 
+    canonical = _canonicalise_choice_elements(path)
+
     out: list[str | tuple[str, int]] = []
-    for raw in path.split("."):
+    for raw in canonical.split("."):
         match = _SEGMENT_RE.match(raw)
         if not match:
             raise ValueError(f"Cannot parse FHIRPath segment: {raw!r}")
         name, index = match.group(1), match.group(2)
         out.append((name, int(index)) if index is not None else name)
     return out
+
+
+def _canonicalise_choice_elements(path: str) -> str:
+    """Translate FHIRPath choice-element notation to JSON property names.
+
+    `Observation.value.ofType(Quantity).value` ->
+    `Observation.valueQuantity.value`
+
+    Idempotent: paths with no choice elements pass through unchanged.
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        type_name = match.group(1)
+        return type_name[0].upper() + type_name[1:]
+
+    return _OF_TYPE_RE.sub(replace, path)
 
 
 def _descend(cursor: Any, part: str | tuple[str, int]) -> Any:

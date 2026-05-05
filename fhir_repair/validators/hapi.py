@@ -60,10 +60,13 @@ class HapiRestValidator:
     ) -> list[ValidationError]:
         """Validate `resource` and return its issues.
 
-        Raises `httpx.HTTPError` if the server returns a non-2xx response
-        for reasons other than validation failure. Validation failures
-        themselves come back as 200 with an OperationOutcome body, which
-        is normal HAPI behaviour.
+        HAPI's $validate operation uses HTTP status to signal outcome:
+          - 200: resource is valid (body may contain warnings/info)
+          - 422: validation errors found (body contains the error list)
+
+        Both responses carry an OperationOutcome we need to parse. Other
+        non-2xx statuses (5xx, 4xx other than 422) indicate a server-side
+        problem unrelated to the resource's validity, and propagate.
         """
         resource_type = resource.get("resourceType")
         if not resource_type:
@@ -76,10 +79,11 @@ class HapiRestValidator:
             params=params,
         )
 
-        # HAPI returns 200 even when validation fails; the outcome contains
-        # the issues. A non-2xx status indicates a server problem, not a
-        # validation problem, so let httpx raise.
-        response.raise_for_status()
+        # 422 is the spec-compliant "validation failed" status from $validate;
+        # parse its body as an OperationOutcome rather than treating it as
+        # a transport error.
+        if response.status_code != 422:
+            response.raise_for_status()
 
         outcome = response.json()
         return _parse_outcome(outcome)
@@ -102,11 +106,13 @@ def _parse_outcome(outcome: dict[str, Any]) -> list[ValidationError]:
     errors: list[ValidationError] = []
 
     for issue in outcome.get("issue", []):
-        # Skip purely informational issues; they do not represent fixable
-        # errors. Warnings are kept because they often signal profile
-        # conformance problems users want to address.
+        # Only `error` and `fatal` represent failed validation in the FHIR
+        # sense (HAPI returns 200 with warnings still present). `warning`
+        # and `information` are guidance, not failures, and cannot be
+        # uniformly fixed; surfacing them as repair candidates produces
+        # spurious unresolved errors and noisy audit logs.
         severity = _SEVERITY_MAP.get(issue.get("severity", "error"), "error")
-        if severity == "information":
+        if severity in ("warning", "information"):
             continue
 
         location = ""
