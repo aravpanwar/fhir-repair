@@ -34,6 +34,48 @@ def test_validate_returns_empty_list_for_valid_resource():
 
 
 @respx.mock
+def test_validate_parses_outcome_on_422():
+    # HAPI returns 422 (Unprocessable Entity) when $validate finds errors.
+    # The body still contains an OperationOutcome that we must parse,
+    # not treat as a transport-level failure.
+    respx.post("http://example/fhir/Patient/$validate").mock(
+        return_value=httpx.Response(
+            422,
+            json=_outcome(
+                {
+                    "severity": "error",
+                    "code": "invalid",
+                    "diagnostics": "bad",
+                    "expression": ["Patient.birthDate"],
+                }
+            ),
+        )
+    )
+    validator = HapiRestValidator(base_url="http://example/fhir")
+    try:
+        errors = validator.validate({"resourceType": "Patient"})
+    finally:
+        validator.close()
+
+    assert len(errors) == 1
+    assert errors[0].code == "invalid"
+
+
+@respx.mock
+def test_validate_raises_on_other_4xx():
+    # Non-422 client errors are real transport problems and should propagate.
+    respx.post("http://example/fhir/Patient/$validate").mock(
+        return_value=httpx.Response(404, text="not found")
+    )
+    validator = HapiRestValidator(base_url="http://example/fhir")
+    try:
+        with pytest.raises(httpx.HTTPStatusError):
+            validator.validate({"resourceType": "Patient"})
+    finally:
+        validator.close()
+
+
+@respx.mock
 def test_validate_normalizes_issues():
     respx.post("http://example/fhir/Patient/$validate").mock(
         return_value=httpx.Response(
@@ -61,7 +103,9 @@ def test_validate_normalizes_issues():
 
 
 @respx.mock
-def test_validate_drops_information_severity():
+def test_validate_drops_warnings_and_information():
+    # Only `error` and `fatal` are surfaced as repair candidates;
+    # warnings and information are guidance, not failures.
     respx.post("http://example/fhir/Patient/$validate").mock(
         return_value=httpx.Response(
             200,
@@ -70,6 +114,12 @@ def test_validate_drops_information_severity():
                     "severity": "information",
                     "code": "informational",
                     "diagnostics": "FYI",
+                    "expression": ["Patient"],
+                },
+                {
+                    "severity": "warning",
+                    "code": "processing",
+                    "diagnostics": "best practice recommendation",
                     "expression": ["Patient"],
                 },
                 {

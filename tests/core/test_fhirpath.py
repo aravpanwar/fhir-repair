@@ -47,3 +47,22 @@ def test_set_at_path_drops_resource_type_segment():
     resource = {"resourceType": "Patient", "birthDate": "wrong"}
     set_at_path(resource, "Patient.birthDate", "1990-03-05")
     assert resource["birthDate"] == "1990-03-05"
+
+
+def test_get_at_path_handles_choice_element_notation():
+    resource = {
+        "resourceType": "Condition",
+        "onsetDateTime": "2020-06-22",
+    }
+    # HAPI emits FHIRPath ofType notation for choice elements; we should
+    # canonicalise to the JSON property name and find the value.
+    assert get_at_path(resource, "Condition.onset.ofType(dateTime)") == "2020-06-22"
+
+
+def test_set_at_path_handles_choice_element_notation():
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": 70.5, "unit": "kg"},
+    }
+    set_at_path(resource, "Observation.value.ofType(Quantity).value", 71.0)
+    assert resource["valueQuantity"]["value"] == 71.0

@@ -17,16 +17,14 @@ services:
       # Enable the $validate operation explicitly. Some HAPI builds keep
       # it off by default for performance reasons; we want it on.
       hapi.fhir.validation.requests_enabled: "true"
-      # Persist HAPI's H2 database between restarts so warm-up time
-      # amortises across runs. For a stateless run, mount a tmpfs instead.
-      spring.datasource.url: "jdbc:h2:file:/data/h2;DB_CLOSE_DELAY=-1"
-    volumes:
-      - hapi-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/fhir/metadata || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
+    # No volume or persistent datasource: HAPI uses its default in-image
+    # H2 location, fresh on every start. Restart cost is ~60-90s; that
+    # is acceptable for local dev and avoids permission issues with
+    # named volumes on Docker Desktop.
+    #
+    # No service-level healthcheck: the HAPI image does not ship curl, so
+    # an in-container healthcheck would never succeed. Poll from the host
+    # instead, e.g. `curl http://localhost:8080/fhir/metadata`.
 
   # Optional: build and run the CLI as a container. Most users will run
   # the CLI on their host (faster iteration), but this profile is handy
@@ -38,8 +36,7 @@ services:
       dockerfile: docker/Dockerfile
     image: fhir-repair:local
     depends_on:
-      hapi:
-        condition: service_healthy
+      - hapi
     environment:
       HAPI_BASE_URL: "http://hapi:8080/fhir"
       LLM_API_KEY: "${LLM_API_KEY:-}"
@@ -48,6 +45,3 @@ services:
     volumes:
       - ./in:/in:ro
       - ./out:/out
-
-volumes:
-  hapi-data:

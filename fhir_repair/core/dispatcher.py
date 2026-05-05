@@ -26,9 +26,10 @@ from typing import Any
 from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, ValidationError
 
-# A strategy plan entry is (strategy_id, error). The strategy_id is
-# resolved against the registry when the plan is executed.
-PlanEntry = tuple[str, ValidationError]
+# A strategy plan entry is (chain, error). `chain` is an ordered list of
+# strategy ids; the repairer tries each in order until one does not refuse.
+# The chain is resolved against the registry when the plan is executed.
+PlanEntry = tuple[list[str], ValidationError]
 
 
 @dataclass
@@ -45,22 +46,38 @@ class DispatchPlan:
 
 
 class StrategyResolver:
-    """Resolves an error code to a strategy identifier from the dispatch table."""
+    """Resolves an error code to a strategy chain from the dispatch table."""
 
-    def __init__(self, table: dict[str, str]):
+    def __init__(self, table: dict[str, str | list[str]]):
         self._table = table
 
-    def resolve(self, error: ValidationError) -> str | None:
-        """Return the strategy id for an error, or None if unmapped.
+    def resolve(self, error: ValidationError) -> list[str]:
+        """Return the strategy chain for an error, or [] if unmapped.
 
         Resolution order:
           1. Exact `error.code` match
           2. `unknown-error` catch-all
-          3. None
+          3. []
+
+        A single-string entry in the table is normalised to a one-element
+        chain. A `refuse` entry returns []; the dispatcher then routes the
+        error to the unmapped list.
         """
-        if error.code in self._table:
-            return self._table[error.code]
-        return self._table.get("unknown-error")
+        raw: str | list[str] | None = self._table.get(error.code)
+        if raw is None:
+            raw = self._table.get("unknown-error")
+
+        if raw is None:
+            return []
+
+        chain = [raw] if isinstance(raw, str) else list(raw)
+
+        # `refuse` is a sentinel that means "do not attempt"; it never
+        # belongs in a chain. If it appears anywhere we treat it as
+        # an explicit refusal.
+        if "refuse" in chain:
+            return []
+        return chain
 
 
 def build_plan(
@@ -68,33 +85,33 @@ def build_plan(
     resolver: StrategyResolver,
 ) -> DispatchPlan:
     """Group errors into depth-batched, deterministic-first execution order."""
-    mapped: list[tuple[int, str, ValidationError]] = []
+    mapped: list[tuple[int, list[str], ValidationError]] = []
     unmapped: list[ValidationError] = []
 
     for error in errors:
-        strategy_id = resolver.resolve(error)
-        if strategy_id is None or strategy_id == "refuse":
+        chain = resolver.resolve(error)
+        if not chain:
             unmapped.append(error)
             continue
-        mapped.append((error.depth, strategy_id, error))
+        mapped.append((error.depth, chain, error))
 
-    # Sort by depth descending, then deterministic-before-llm by strategy
-    # prefix. Stable sort preserves the input ordering inside each bucket,
-    # which keeps audit logs deterministic.
-    mapped.sort(key=lambda t: (-t[0], _strategy_priority(t[1])))
+    # Sort by depth descending, then deterministic-before-llm by the chain's
+    # leading strategy id. Stable sort preserves the input ordering inside
+    # each bucket, which keeps audit logs deterministic.
+    mapped.sort(key=lambda t: (-t[0], _strategy_priority(t[1][0])))
 
     # Group consecutive entries with the same depth into one batch.
     batches: list[list[PlanEntry]] = []
     current: list[PlanEntry] = []
     current_depth: int | None = None
 
-    for depth, strategy_id, error in mapped:
+    for depth, chain, error in mapped:
         if current_depth is None or depth == current_depth:
-            current.append((strategy_id, error))
+            current.append((chain, error))
             current_depth = depth
         else:
             batches.append(current)
-            current = [(strategy_id, error)]
+            current = [(chain, error)]
             current_depth = depth
 
     if current:

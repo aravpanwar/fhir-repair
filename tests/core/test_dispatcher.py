@@ -18,12 +18,34 @@ def _err(code: str, location: str) -> ValidationError:
 def test_resolver_falls_back_to_unknown_error():
     resolver = StrategyResolver({"unknown-error": "llm"})
     error = _err("never-seen-before", "Patient.birthDate")
-    assert resolver.resolve(error) == "llm"
+    assert resolver.resolve(error) == ["llm"]
 
 
-def test_resolver_returns_none_when_no_match_and_no_fallback():
+def test_resolver_returns_empty_list_when_no_match_and_no_fallback():
     resolver = StrategyResolver({})
-    assert resolver.resolve(_err("x", "Patient")) is None
+    assert resolver.resolve(_err("x", "Patient")) == []
+
+
+def test_resolver_normalises_single_string_to_one_element_chain():
+    resolver = StrategyResolver({"foo": "deterministic.normalize_date"})
+    assert resolver.resolve(_err("foo", "Patient.x")) == ["deterministic.normalize_date"]
+
+
+def test_resolver_returns_chain_as_list():
+    resolver = StrategyResolver(
+        {"processing": ["deterministic.normalize_date", "deterministic.unwrap_singleton"]}
+    )
+    assert resolver.resolve(_err("processing", "Patient.x")) == [
+        "deterministic.normalize_date",
+        "deterministic.unwrap_singleton",
+    ]
+
+
+def test_resolver_treats_refuse_as_unmapped():
+    # `refuse` anywhere in a chain means "do not attempt"; the dispatcher
+    # routes the error to unmapped.
+    resolver = StrategyResolver({"foo": "refuse"})
+    assert resolver.resolve(_err("foo", "Patient.x")) == []
 
 
 def test_plan_orders_deepest_first():
@@ -65,8 +87,8 @@ def test_plan_puts_deterministic_before_llm_at_same_depth():
     ]
     plan = build_plan(errors, resolver)
     first_batch = plan.batches[0]
-    # First entry should be the deterministic strategy.
-    assert first_batch[0][0].startswith("deterministic.")
+    # First entry's chain head should be the deterministic strategy.
+    assert first_batch[0][0][0].startswith("deterministic.")
 
 
 def test_unmapped_errors_collected_separately():

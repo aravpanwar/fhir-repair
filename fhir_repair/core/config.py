@@ -24,8 +24,13 @@ ENV_VAR_RE = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)\}")
 class LLMConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    provider: str = "anthropic"
-    model: str = "claude-sonnet-4-6"
+    # All fields are Optional because YAML expansion of an unset
+    # environment variable (e.g. ${LLM_PROVIDER}) produces an empty
+    # value that parses as None. Allowing None at the type level lets
+    # the config load cleanly when no LLM is configured; downstream
+    # code (build_llm_provider) handles missing values explicitly.
+    provider: str | None = None
+    model: str | None = None
     temperature: float = 0.0
     prompt_version: str = "v1"
     endpoint: str | None = None
@@ -86,7 +91,13 @@ class RepairConfig(BaseModel):
     hapi_version: str = "7.4.0"
     dispatch_version: str = "1.0.0"
 
-    strategies: dict[str, str] = Field(default_factory=dict)
+    # Each error code maps to either a single strategy id or an ordered list
+    # of strategy ids to try in turn. The dispatcher tries each strategy in
+    # order; the first one that does not refuse wins. This lets a single
+    # FHIR issue code (e.g. HAPI's coarse `processing`) route to several
+    # specific strategies, each of which refuses cleanly when its
+    # preconditions do not match.
+    strategies: dict[str, str | list[str]] = Field(default_factory=dict)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     terminology: TerminologyConfig = Field(default_factory=TerminologyConfig)
     hallucination_guard: HallucinationGuardConfig = Field(default_factory=HallucinationGuardConfig)
