@@ -17,6 +17,8 @@ Specific LLM strategies (e.g. terminology binding) are instances of
 from __future__ import annotations
 
 import json
+import logging
+import random
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -31,9 +33,11 @@ from fhir_repair.core.models import (
     RepairAction,
     ValidationError,
 )
-from fhir_repair.llm.base import LLMProvider
+from fhir_repair.llm.base import Completion, LLMProvider
 from fhir_repair.strategies.base import refused
 from fhir_repair.strategies.llm.rag import SpecRetriever
+
+logger = logging.getLogger(__name__)
 
 # Type for a parser that takes the LLM's raw text and returns the new value
 # at the error location. May raise to signal "could not parse" or
@@ -69,6 +73,9 @@ class LLMStrategy:
         retriever: SpecRetriever | None = None,
         parser: ResponseParser = _default_parser,
         system_prompt: str | None = None,
+        max_retries: int = 3,
+        backoff_base_s: float = 1.0,
+        backoff_max_s: float = 30.0,
     ) -> None:
         self.name = name
         self.version = version
@@ -81,6 +88,9 @@ class LLMStrategy:
         self._retriever = retriever
         self._parser = parser
         self._system_prompt = system_prompt or _DEFAULT_SYSTEM_PROMPT
+        self._max_retries = max_retries
+        self._backoff_base_s = backoff_base_s
+        self._backoff_max_s = backoff_max_s
 
     def apply(
         self,
@@ -111,19 +121,18 @@ class LLMStrategy:
             segments.append(PromptSegment(role="system", text=spec_excerpt, stable=True))
         segments.append(PromptSegment(role="user", text=rendered, stable=False))
 
-        start = time.perf_counter()
-        try:
-            completion = self._provider.complete(segments)
-        except Exception as exc:
+        completion = self._call_with_retry(segments)
+        if completion is None:
+            # retry loop exhausted; refusal already returned below
             return refused(
                 error,
                 self.name,
                 self.version,
                 self.permission,
                 before,
-                f"LLM call failed: {exc}",
+                "LLM call failed after all retries.",
             )
-        latency_ms = int((time.perf_counter() - start) * 1000)
+        latency_ms = completion.latency_ms
 
         try:
             new_value = self._parser(completion.text)
@@ -161,6 +170,50 @@ class LLMStrategy:
         )
         return action
 
+    def _call_with_retry(
+        self,
+        segments: list[PromptSegment],
+    ) -> Completion | None:
+        """Call the provider with exponential backoff on transient failures.
+
+        Retries on connection errors and rate limits. Permanent failures
+        (import errors, bad credentials, parse failures) do not retry.
+        Returns None only when all attempts have been exhausted; the caller
+        converts that into a refusal.
+        """
+        deadline = self._backoff_max_s
+        for attempt in range(self._max_retries + 1):
+            call_start = time.perf_counter()
+            try:
+                result = self._provider.complete(segments)
+                # Overwrite latency with our own measurement so it
+                # reflects the wall-clock cost including any retries.
+                result.latency_ms = int((time.perf_counter() - call_start) * 1000)
+                return result
+            except (ImportError, ValueError) as exc:
+                # Permanent configuration or dependency errors. Do not
+                # retry; the caller will write a refusal with the message.
+                logger.warning("permanent LLM error: %s", exc)
+                return None
+            except Exception as exc:
+                logger.warning(
+                    "LLM call attempt %d/%d failed: %s",
+                    attempt + 1,
+                    self._max_retries + 1,
+                    exc,
+                )
+                if attempt == self._max_retries:
+                    return None
+                # Exponential backoff with full jitter. Base grows as
+                # base * 2^attempt, clamped to backoff_max_s, then
+                # multiplied by a uniform random factor in [0.5, 1.0].
+                base = self._backoff_base_s * (2**attempt)
+                capped = min(base, deadline)
+                wait = capped * (0.5 + random.random() * 0.5)
+                logger.debug("retrying in %.1fs", wait)
+                time.sleep(wait)
+        return None
+
 
 # A short system prompt tuned for fix-the-broken-FHIR tasks. Sets the JSON
 # response contract enforced by `_default_parser`.
@@ -191,6 +244,9 @@ def register_default_llm_strategies(
     provider: LLMProvider,
     prompt_version: str = "v1",
     retriever: SpecRetriever | None = None,
+    max_retries: int = 3,
+    backoff_base_s: float = 1.0,
+    backoff_max_s: float = 30.0,
 ) -> None:
     """Register the v0.1 LLM strategies on `registry`.
 
@@ -216,6 +272,9 @@ def register_default_llm_strategies(
             prompt_version=prompt_version,
             provider=provider,
             retriever=retriever,
+            max_retries=max_retries,
+            backoff_base_s=backoff_base_s,
+            backoff_max_s=backoff_max_s,
         )
     )
     registry.register(
@@ -228,5 +287,8 @@ def register_default_llm_strategies(
             prompt_version=prompt_version,
             provider=provider,
             retriever=retriever,
+            max_retries=max_retries,
+            backoff_base_s=backoff_base_s,
+            backoff_max_s=backoff_max_s,
         )
     )
