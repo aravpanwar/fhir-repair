@@ -14,7 +14,7 @@ import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TextIO
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -126,7 +126,7 @@ class AuditWriter:
         self._resource_type = resource_type
         self._fhir_version = fhir_version
         self._dispatch_version = dispatch_version
-        self._fh: Any = None
+        self._fh: TextIO | None = None
 
     def __enter__(self) -> AuditWriter:
         self._destination.parent.mkdir(parents=True, exist_ok=True)
