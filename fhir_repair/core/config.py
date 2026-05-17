@@ -36,6 +36,16 @@ class LLMConfig(BaseModel):
     endpoint: str | None = None
     api_key: str | None = None
 
+    # Transient error retry. Retrying is safe because LLM calls are
+    # deterministic at temperature 0.0 and the upstream provider
+    # deduplicates idempotent requests. Only connection errors and
+    # rate-limit responses are retried; parse failures and 4xx errors
+    # are not, since those indicate a configuration or content problem
+    # that will not resolve with backoff.
+    max_retries: int = 3
+    backoff_base_s: float = 1.0
+    backoff_max_s: float = 30.0
+
 
 class TerminologyConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")

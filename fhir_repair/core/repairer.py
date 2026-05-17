@@ -101,7 +101,14 @@ class Repairer:
         defaults = {"llm", "llm.suggest_terminology_match"}
         if defaults.issubset(existing):
             return
-        register_default_llm_strategies(self._registry, resolved_provider)
+        register_default_llm_strategies(
+            self._registry,
+            resolved_provider,
+            prompt_version=self._config.llm.prompt_version,
+            max_retries=self._config.llm.max_retries,
+            backoff_base_s=self._config.llm.backoff_base_s,
+            backoff_max_s=self._config.llm.backoff_max_s,
+        )
 
     def repair(self, resource: dict[str, Any]) -> RepairResult:
         """Repair a resource, returning the fix and the audit log."""
