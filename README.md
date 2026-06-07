@@ -125,8 +125,9 @@ reference.
 
 This is a v0.1 pre-release. Current capabilities:
 
-- 3 deterministic strategies: `normalize_date`, `normalize_decimal`,
-  `unwrap_singleton`
+- 6 deterministic strategies: `normalize_date`, `normalize_decimal`,
+  `unwrap_singleton`, `normalize_telecom`, `normalize_codeable_concept`,
+  `canonicalize_identifier_system`
 - 2 LLM strategies (opt-in via dispatch table):
   `llm.suggest_terminology_match`, generic `llm`
 - HAPI REST validator adapter (pinned to HAPI 7.4.0)
@@ -138,8 +139,7 @@ This is a v0.1 pre-release. Current capabilities:
 Deferred to later releases:
 
 - FastAPI HTTP service
-- Additional deterministic strategies (telecom, codeable concept,
-  identifier system, invariant)
+- Additional deterministic strategies (invariant)
 - Additional LLM providers (OpenAI, Bedrock, on-prem)
 - Full Synthea-generated benchmark corpus and wild-sample empirical study corpus
 - Public model-vs-prompt benchmark leaderboard
