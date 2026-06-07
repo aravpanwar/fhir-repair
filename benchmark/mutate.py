@@ -209,6 +209,45 @@ def mutate_invariant_violation(
     )
 
 
+# Scheme prefix to prepend per ContactPoint.system, mirroring the redundant
+# prefixes the normalize_telecom strategy strips.
+_TELECOM_SCHEME = {
+    "phone": "tel:",
+    "fax": "fax:",
+    "sms": "sms:",
+    "email": "mailto:",
+}
+
+
+def mutate_telecom_format(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Prepend a redundant scheme prefix to a ContactPoint value."""
+    telecom = resource.get("telecom")
+    if not isinstance(telecom, list) or not telecom:
+        return None
+
+    entry = telecom[0]
+    if not isinstance(entry, dict):
+        return None
+
+    system = entry.get("system")
+    value = entry.get("value")
+    scheme = _TELECOM_SCHEME.get(system) if isinstance(system, str) else None
+    if scheme is None or not isinstance(value, str) or value.lower().startswith(scheme):
+        return None
+
+    out = copy.deepcopy(resource)
+    out["telecom"][0]["value"] = scheme + value
+    return MutationResult(
+        resource=out,
+        description=f"telecom-scheme-prefix-{system}",
+        location=f"{resource['resourceType']}.telecom[0].value",
+        original_value=value,
+    )
+
+
 # Registry of mutations included in the benchmark.
 MUTATIONS: dict[str, Mutation] = {
     "date_format": mutate_date_format,
@@ -217,6 +256,7 @@ MUTATIONS: dict[str, Mutation] = {
     "decimal_format": mutate_decimal_format,
     "invalid_code_binding": mutate_invalid_code_binding,
     "invariant_violation": mutate_invariant_violation,
+    "telecom_format": mutate_telecom_format,
 }
 
 

@@ -86,3 +86,27 @@ def test_invariant_violation_skips_without_value():
 def test_invariant_violation_skips_non_observation():
     resource = {"resourceType": "Patient", "valueQuantity": {"value": 1.0}}
     assert mutate.mutate_invariant_violation(resource, _RNG) is None
+
+
+def test_telecom_format_prepends_scheme():
+    resource = {
+        "resourceType": "Patient",
+        "telecom": [{"system": "phone", "value": "555-0100"}],
+    }
+    result = mutate.mutate_telecom_format(resource, _RNG)
+    assert result is not None
+    assert result.resource["telecom"][0]["value"] == "tel:555-0100"
+    assert result.original_value == "555-0100"
+
+
+def test_telecom_format_skips_when_already_prefixed():
+    resource = {
+        "resourceType": "Patient",
+        "telecom": [{"system": "phone", "value": "tel:555-0100"}],
+    }
+    assert mutate.mutate_telecom_format(resource, _RNG) is None
+
+
+def test_telecom_format_skips_without_telecom():
+    resource = {"resourceType": "Patient", "gender": "male"}
+    assert mutate.mutate_telecom_format(resource, _RNG) is None
