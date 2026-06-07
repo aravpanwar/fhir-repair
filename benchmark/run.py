@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -93,7 +94,29 @@ def _aggregate(results: list[dict[str, Any]], total_duration_ms: int) -> dict[st
         "ground_truth_match_rate": matched / total,
         "mean_duration_ms": sum(r["duration_ms"] for r in results) // total,
         "total_duration_ms": total_duration_ms,
+        "by_mutation": _by_mutation(results),
     }
+
+
+def _by_mutation(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Pass and match rates grouped by mutation class.
+
+    The leaderboard uses this to show which error classes a model handles
+    well and which it does not, instead of a single blended number.
+    """
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for result in results:
+        groups[result["mutation"]].append(result)
+
+    out: dict[str, dict[str, Any]] = {}
+    for name, group in sorted(groups.items()):
+        count = len(group)
+        out[name] = {
+            "total": count,
+            "validator_pass_rate": sum(1 for r in group if r["passed_validator"]) / count,
+            "ground_truth_match_rate": sum(1 for r in group if r["matches_ground_truth"]) / count,
+        }
+    return out
 
 
 def main() -> None:
