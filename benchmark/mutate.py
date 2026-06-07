@@ -106,11 +106,37 @@ def mutate_missing_required(
     )
 
 
-# Registry of mutations included in the v0.1 benchmark.
+def mutate_decimal_format(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Corrupt a decimal value with a locale comma separator."""
+    quantity = resource.get("valueQuantity")
+    if not isinstance(quantity, dict):
+        return None
+
+    value = quantity.get("value")
+    # bool is a subclass of int; exclude it. Integers stringify without a
+    # separator to swap, so only floats produce a meaningful corruption.
+    if not isinstance(value, float):
+        return None
+
+    out = copy.deepcopy(resource)
+    out["valueQuantity"]["value"] = str(value).replace(".", ",")
+    return MutationResult(
+        resource=out,
+        description="decimal-locale-comma",
+        location=f"{resource['resourceType']}.valueQuantity.value",
+        original_value=value,
+    )
+
+
+# Registry of mutations included in the benchmark.
 MUTATIONS: dict[str, Mutation] = {
     "date_format": mutate_date_format,
     "singleton_wrap": mutate_singleton_wrap,
     "missing_required": mutate_missing_required,
+    "decimal_format": mutate_decimal_format,
 }
 
 
