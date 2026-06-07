@@ -248,6 +248,43 @@ def mutate_telecom_format(
     )
 
 
+# Canonical identifier system URI to short label. The reverse of the
+# canonicalize_identifier_system strategy's synonym table.
+_IDENTIFIER_SYSTEM_LABELS = {
+    "http://hl7.org/fhir/sid/us-ssn": "SSN",
+    "http://hl7.org/fhir/sid/us-npi": "NPI",
+    "http://hl7.org/fhir/sid/us-mbi": "MBI",
+}
+
+
+def mutate_identifier_system(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Replace a canonical Identifier.system URI with a short label."""
+    identifiers = resource.get("identifier")
+    if not isinstance(identifiers, list) or not identifiers:
+        return None
+
+    entry = identifiers[0]
+    if not isinstance(entry, dict):
+        return None
+
+    system = entry.get("system")
+    label = _IDENTIFIER_SYSTEM_LABELS.get(system) if isinstance(system, str) else None
+    if label is None:
+        return None
+
+    out = copy.deepcopy(resource)
+    out["identifier"][0]["system"] = label
+    return MutationResult(
+        resource=out,
+        description="identifier-system-label",
+        location=f"{resource['resourceType']}.identifier[0].system",
+        original_value=system,
+    )
+
+
 # Registry of mutations included in the benchmark.
 MUTATIONS: dict[str, Mutation] = {
     "date_format": mutate_date_format,
@@ -257,6 +294,7 @@ MUTATIONS: dict[str, Mutation] = {
     "invalid_code_binding": mutate_invalid_code_binding,
     "invariant_violation": mutate_invariant_violation,
     "telecom_format": mutate_telecom_format,
+    "identifier_system": mutate_identifier_system,
 }
 
 
