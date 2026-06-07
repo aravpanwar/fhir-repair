@@ -6,61 +6,149 @@
   <style>
     body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
     h1 { margin-bottom: 0.25rem; }
+    h2 { margin-top: 2.5rem; }
     .subtitle { color: #666; margin-top: 0; }
     table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; }
     th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #ddd; }
     th { background: #f5f5f5; }
     tbody tr:hover { background: #fafafa; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     .empty { color: #999; font-style: italic; padding: 2rem 0; text-align: center; }
     code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+    #breakdown { display: none; }
   </style>
 </head>
 <body>
   <h1>fhir-repair benchmark</h1>
   <p class="subtitle">Validator pass rate, ground-truth match rate, and latency by model and prompt strategy.</p>
 
-  <p>This page is rendered from <code>results.json</code>. Run the benchmark with:</p>
+  <p>This page is rendered from <code>leaderboard.json</code> (or a single
+  <code>results.json</code>). Build it with:</p>
 
   <pre><code>python -m benchmark.run \
     --corpus benchmark/corpus/synthea_mutated \
     --manifest benchmark/corpus/synthea_mutated/manifest.json \
     --config examples/repair-config.yaml \
-    --out benchmark/results.json</code></pre>
+    --out benchmark/results.json \
+    --leaderboard benchmark/leaderboard.json \
+    --label "claude-opus / v1"</code></pre>
 
   <table id="leaderboard">
     <thead>
       <tr>
+        <th>Run</th>
         <th>Model</th>
         <th>Prompt</th>
-        <th>Validator pass</th>
-        <th>Ground-truth match</th>
-        <th>Mean latency</th>
+        <th class="num">Validator pass</th>
+        <th class="num">Ground-truth match</th>
+        <th class="num">Mean latency</th>
       </tr>
     </thead>
     <tbody id="leaderboard-body">
-      <tr><td colspan="5" class="empty">No results yet. Run the benchmark to populate this table.</td></tr>
+      <tr><td colspan="6" class="empty">No results yet. Run the benchmark to populate this table.</td></tr>
     </tbody>
   </table>
 
+  <section id="breakdown">
+    <h2 id="breakdown-title">Per-mutation breakdown</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mutation</th>
+          <th class="num">Cases</th>
+          <th class="num">Validator pass</th>
+          <th class="num">Ground-truth match</th>
+        </tr>
+      </thead>
+      <tbody id="breakdown-body"></tbody>
+    </table>
+  </section>
+
   <script>
-    fetch('results.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data || !data.summary) return;
-        const body = document.getElementById('leaderboard-body');
-        body.innerHTML = '';
-        const meta = data.metadata || {};
+    const pct = x => (x === null || x === undefined) ? '-' : (x * 100).toFixed(1) + '%';
+
+    function entryFromResults(data) {
+      if (!data || !data.summary) return null;
+      const meta = data.metadata || {};
+      const s = data.summary;
+      return {
+        label: meta.llm_model || 'run',
+        model: meta.llm_model,
+        prompt_version: meta.prompt_version,
+        validator_pass_rate: s.validator_pass_rate,
+        ground_truth_match_rate: s.ground_truth_match_rate,
+        mean_duration_ms: s.mean_duration_ms,
+        by_mutation: s.by_mutation || {},
+      };
+    }
+
+    function renderLeaderboard(entries) {
+      const body = document.getElementById('leaderboard-body');
+      body.innerHTML = '';
+      for (const e of entries) {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${meta.llm_model || 'unknown'}</td>
-          <td>${meta.prompt_version || 'v1'}</td>
-          <td>${(data.summary.validator_pass_rate * 100).toFixed(1)}%</td>
-          <td>${(data.summary.ground_truth_match_rate * 100).toFixed(1)}%</td>
-          <td>${data.summary.mean_duration_ms} ms</td>
+          <td>${e.label || '-'}</td>
+          <td>${e.model || 'unknown'}</td>
+          <td>${e.prompt_version || 'v1'}</td>
+          <td class="num">${pct(e.validator_pass_rate)}</td>
+          <td class="num">${pct(e.ground_truth_match_rate)}</td>
+          <td class="num">${e.mean_duration_ms != null ? e.mean_duration_ms + ' ms' : '-'}</td>
         `;
         body.appendChild(row);
-      })
-      .catch(() => {});
+      }
+    }
+
+    function renderBreakdown(entry) {
+      const byMutation = entry && entry.by_mutation;
+      if (!byMutation || Object.keys(byMutation).length === 0) return;
+
+      document.getElementById('breakdown-title').textContent =
+        `Per-mutation breakdown: ${entry.label || entry.model || 'top run'}`;
+
+      const body = document.getElementById('breakdown-body');
+      body.innerHTML = '';
+      for (const name of Object.keys(byMutation).sort()) {
+        const m = byMutation[name];
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><code>${name}</code></td>
+          <td class="num">${m.total}</td>
+          <td class="num">${pct(m.validator_pass_rate)}</td>
+          <td class="num">${pct(m.ground_truth_match_rate)}</td>
+        `;
+        body.appendChild(row);
+      }
+      document.getElementById('breakdown').style.display = 'block';
+    }
+
+    async function fetchJson(url) {
+      try {
+        const r = await fetch(url);
+        return r.ok ? await r.json() : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function load() {
+      let entries = null;
+
+      const board = await fetchJson('leaderboard.json');
+      if (Array.isArray(board) && board.length) {
+        entries = board;
+      } else {
+        const single = entryFromResults(await fetchJson('results.json'));
+        if (single) entries = [single];
+      }
+
+      if (!entries) return;
+      entries.sort((a, b) => (b.validator_pass_rate || 0) - (a.validator_pass_rate || 0));
+      renderLeaderboard(entries);
+      renderBreakdown(entries[0]);
+    }
+
+    load();
   </script>
 </body>
 </html>
