@@ -36,6 +36,9 @@ strategies:
     - deterministic.normalize_date
     - deterministic.normalize_decimal
     - deterministic.unwrap_singleton
+    - deterministic.normalize_telecom
+    - deterministic.normalize_codeable_concept
+    - deterministic.canonicalize_identifier_system
 
   # Fallback for any error code we have not mapped explicitly. `refuse`
   # is the conservative default. To use the LLM as a catch-all, set
