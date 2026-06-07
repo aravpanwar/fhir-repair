@@ -41,3 +41,25 @@ def test_decimal_format_skips_integer_value():
 def test_decimal_format_skips_without_quantity():
     resource = {"resourceType": "Patient", "gender": "male"}
     assert mutate.mutate_decimal_format(resource, _RNG) is None
+
+
+def test_invalid_code_binding_corrupts_gender():
+    resource = {"resourceType": "Patient", "gender": "male"}
+    result = mutate.mutate_invalid_code_binding(resource, _RNG)
+    assert result is not None
+    assert result.resource["gender"] == "M"
+    assert result.original_value == "male"
+    assert result.location == "Patient.gender"
+
+
+def test_invalid_code_binding_corrupts_status():
+    resource = {"resourceType": "Observation", "status": "final"}
+    result = mutate.mutate_invalid_code_binding(resource, _RNG)
+    assert result is not None
+    assert result.resource["status"] == "F"
+    assert result.original_value == "final"
+
+
+def test_invalid_code_binding_skips_unknown_field():
+    resource = {"resourceType": "Patient", "active": True}
+    assert mutate.mutate_invalid_code_binding(resource, _RNG) is None
