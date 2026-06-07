@@ -81,6 +81,7 @@ def default_registry() -> StrategyRegistry:
         codeable_concept,
         date,
         decimal,
+        identifier,
         telecom,
     )
 
@@ -90,4 +91,5 @@ def default_registry() -> StrategyRegistry:
     registry.register_module(decimal)
     registry.register_module(telecom)
     registry.register_module(codeable_concept)
+    registry.register_module(identifier)
     return registry
