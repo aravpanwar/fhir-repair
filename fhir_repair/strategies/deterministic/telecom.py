@@ -123,7 +123,7 @@ def _normalize_value(system: str, value: str) -> str | None:
     # If the value carries one of this system's own schemes, strip it.
     for prefix in prefixes:
         if lowered.startswith(prefix):
-            return trimmed[len(prefix):].strip()
+            return trimmed[len(prefix) :].strip()
 
     # A scheme that belongs only to a different system signals the
     # system/value pair may be wrong. Refuse rather than guess which side
