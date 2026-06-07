@@ -5,10 +5,11 @@ applies one well-defined corruption, and returns a broken copy plus
 metadata describing what was done. The metadata is the ground truth a
 benchmark scorer compares the repaired output against.
 
-v0.1 ships three mutations to keep the harness small while exercising
-both the deterministic-fix path (date format, singleton wrap) and the
-refusal path (missing required). The remaining five mutations from the
-study design are added in v0.2.
+All eight mutation classes from the study design are implemented: date
+format, decimal format, singleton wrap, missing required, invalid code
+binding, invariant violation, telecom format, and identifier system. Each
+mutation returns None for resources it does not apply to, so the corpus
+generator simply skips inapplicable pairs.
 """
 
 from __future__ import annotations

@@ -135,6 +135,7 @@ This is a v0.1 pre-release. Current capabilities:
 - JSON Lines audit log with sealed v1 schema
 - CLI and Python library
 - Starter benchmark corpus (6 hand-curated R4 resources)
+- Benchmark mutation harness with all 8 study-design mutation classes
 
 Deferred to later releases:
 
