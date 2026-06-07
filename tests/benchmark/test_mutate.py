@@ -110,3 +110,33 @@ def test_telecom_format_skips_when_already_prefixed():
 def test_telecom_format_skips_without_telecom():
     resource = {"resourceType": "Patient", "gender": "male"}
     assert mutate.mutate_telecom_format(resource, _RNG) is None
+
+
+def test_identifier_system_replaces_canonical_with_label():
+    resource = {
+        "resourceType": "Patient",
+        "identifier": [{"system": "http://hl7.org/fhir/sid/us-ssn", "value": "999-99-9999"}],
+    }
+    result = mutate.mutate_identifier_system(resource, _RNG)
+    assert result is not None
+    assert result.resource["identifier"][0]["system"] == "SSN"
+    assert result.original_value == "http://hl7.org/fhir/sid/us-ssn"
+
+
+def test_identifier_system_skips_unknown_system():
+    resource = {
+        "resourceType": "Patient",
+        "identifier": [{"system": "http://hospital.example/mrn", "value": "1"}],
+    }
+    assert mutate.mutate_identifier_system(resource, _RNG) is None
+
+
+def test_identifier_system_skips_without_identifier():
+    resource = {"resourceType": "Patient", "gender": "male"}
+    assert mutate.mutate_identifier_system(resource, _RNG) is None
+
+
+def test_every_registered_mutation_is_callable():
+    # Guards against a registry entry that points at a missing function.
+    for name, fn in mutate.MUTATIONS.items():
+        assert callable(fn), name
