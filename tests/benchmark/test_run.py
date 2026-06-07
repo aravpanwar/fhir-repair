@@ -49,3 +49,38 @@ def test_aggregate_groups_by_mutation():
     assert by_mutation["date_format"]["validator_pass_rate"] == 0.5
     assert by_mutation["telecom_format"]["validator_pass_rate"] == 1.0
     assert by_mutation["telecom_format"]["ground_truth_match_rate"] == 1.0
+
+
+def _payload(model: str, pass_rate: float) -> dict:
+    return {
+        "summary": {
+            "total": 10,
+            "validator_pass_rate": pass_rate,
+            "ground_truth_match_rate": pass_rate,
+            "mean_duration_ms": 5,
+            "by_mutation": {},
+        },
+        "metadata": {
+            "llm_model": model,
+            "prompt_version": "v1",
+            "dispatch_version": "1.0.0",
+        },
+    }
+
+
+def test_append_to_leaderboard_creates_file(tmp_path):
+    path = tmp_path / "leaderboard.json"
+    entries = run.append_to_leaderboard(_payload("model-a", 0.8), path, "model-a")
+    assert path.exists()
+    assert len(entries) == 1
+    assert entries[0]["label"] == "model-a"
+    assert entries[0]["validator_pass_rate"] == 0.8
+    assert entries[0]["dispatch_version"] == "1.0.0"
+
+
+def test_append_to_leaderboard_accumulates(tmp_path):
+    path = tmp_path / "leaderboard.json"
+    run.append_to_leaderboard(_payload("model-a", 0.8), path, "model-a")
+    entries = run.append_to_leaderboard(_payload("model-b", 0.6), path, "model-b")
+    assert len(entries) == 2
+    assert [e["label"] for e in entries] == ["model-a", "model-b"]

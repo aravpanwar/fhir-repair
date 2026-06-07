@@ -119,6 +119,44 @@ def _by_mutation(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return out
 
 
+def append_to_leaderboard(
+    payload: dict[str, Any],
+    leaderboard_path: Path,
+    label: str,
+) -> list[dict[str, Any]]:
+    """Append a run summary to a cumulative leaderboard file.
+
+    The leaderboard is a JSON array, one entry per run. Each entry carries
+    the headline rates plus enough provenance (model, prompt, dispatch
+    version) to make the comparison reproducible. New runs append rather
+    than overwrite, so a model-vs-prompt sweep builds up over several
+    invocations.
+    """
+    entries: list[dict[str, Any]] = []
+    if leaderboard_path.exists():
+        entries = json.loads(leaderboard_path.read_text(encoding="utf-8"))
+
+    summary = payload.get("summary", {})
+    metadata = payload.get("metadata", {})
+    entries.append(
+        {
+            "label": label,
+            "model": metadata.get("llm_model"),
+            "prompt_version": metadata.get("prompt_version"),
+            "dispatch_version": metadata.get("dispatch_version"),
+            "total": summary.get("total"),
+            "validator_pass_rate": summary.get("validator_pass_rate"),
+            "ground_truth_match_rate": summary.get("ground_truth_match_rate"),
+            "mean_duration_ms": summary.get("mean_duration_ms"),
+            "by_mutation": summary.get("by_mutation", {}),
+            "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+    )
+
+    leaderboard_path.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+    return entries
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the fhir-repair benchmark.")
     parser.add_argument("--corpus", type=Path, required=True)
@@ -126,6 +164,17 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--hapi-url", default=None)
+    parser.add_argument(
+        "--leaderboard",
+        type=Path,
+        default=None,
+        help="Append this run's summary to a cumulative leaderboard JSON file.",
+    )
+    parser.add_argument(
+        "--label",
+        default=None,
+        help="Name for this run in the leaderboard. Defaults to the model id.",
+    )
     args = parser.parse_args()
 
     config = load_config(args.config) if args.config else RepairConfig()
@@ -137,6 +186,10 @@ def main() -> None:
         hapi_url=args.hapi_url,
     )
     print(json.dumps(payload["summary"], indent=2))
+
+    if args.leaderboard is not None:
+        label = args.label or payload["metadata"].get("llm_model") or "run"
+        append_to_leaderboard(payload, args.leaderboard, label)
 
 
 if __name__ == "__main__":
