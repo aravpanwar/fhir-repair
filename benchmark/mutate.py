@@ -173,6 +173,42 @@ def mutate_invalid_code_binding(
     return None
 
 
+_DATA_ABSENT_REASON = {
+    "coding": [
+        {
+            "system": "http://terminology.hl7.org/CodeSystem/data-absent-reason",
+            "code": "unknown",
+        }
+    ]
+}
+
+
+def mutate_invariant_violation(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Violate Observation invariant obs-7.
+
+    obs-7 states that `dataAbsentReason` may only be present when no value is
+    present. Adding it next to an existing `valueQuantity` breaks the
+    invariant while keeping the resource well-formed JSON. The fix is to
+    drop the added field, so the ground truth is the pre-mutation resource.
+    """
+    if resource.get("resourceType") != "Observation":
+        return None
+    if "valueQuantity" not in resource or "dataAbsentReason" in resource:
+        return None
+
+    out = copy.deepcopy(resource)
+    out["dataAbsentReason"] = copy.deepcopy(_DATA_ABSENT_REASON)
+    return MutationResult(
+        resource=out,
+        description="invariant-obs7-value-and-absent",
+        location=f"{resource['resourceType']}.dataAbsentReason",
+        original_value=None,
+    )
+
+
 # Registry of mutations included in the benchmark.
 MUTATIONS: dict[str, Mutation] = {
     "date_format": mutate_date_format,
@@ -180,6 +216,7 @@ MUTATIONS: dict[str, Mutation] = {
     "missing_required": mutate_missing_required,
     "decimal_format": mutate_decimal_format,
     "invalid_code_binding": mutate_invalid_code_binding,
+    "invariant_violation": mutate_invariant_violation,
 }
 
 

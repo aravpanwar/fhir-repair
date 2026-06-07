@@ -63,3 +63,26 @@ def test_invalid_code_binding_corrupts_status():
 def test_invalid_code_binding_skips_unknown_field():
     resource = {"resourceType": "Patient", "active": True}
     assert mutate.mutate_invalid_code_binding(resource, _RNG) is None
+
+
+def test_invariant_violation_adds_data_absent_reason():
+    resource = {
+        "resourceType": "Observation",
+        "status": "final",
+        "valueQuantity": {"value": 70.5},
+    }
+    result = mutate.mutate_invariant_violation(resource, _RNG)
+    assert result is not None
+    assert "dataAbsentReason" in result.resource
+    assert "valueQuantity" in result.resource
+    assert result.original_value is None
+
+
+def test_invariant_violation_skips_without_value():
+    resource = {"resourceType": "Observation", "status": "final"}
+    assert mutate.mutate_invariant_violation(resource, _RNG) is None
+
+
+def test_invariant_violation_skips_non_observation():
+    resource = {"resourceType": "Patient", "valueQuantity": {"value": 1.0}}
+    assert mutate.mutate_invariant_violation(resource, _RNG) is None
