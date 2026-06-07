@@ -131,12 +131,55 @@ def mutate_decimal_format(
     )
 
 
+# Bound code fields and a corruption for each known value. Replacing a code
+# with an abbreviation pushes it outside the bound ValueSet, which is the
+# interpretive case the terminology strategy is meant to handle.
+_BOUND_CODE_FIELDS = ("gender", "status")
+_CODE_CORRUPTION = {
+    "male": "M",
+    "female": "F",
+    "other": "O",
+    "unknown": "U",
+    "final": "F",
+    "preliminary": "P",
+    "amended": "A",
+    "registered": "R",
+}
+
+
+def mutate_invalid_code_binding(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Replace a bound code with an out-of-ValueSet abbreviation."""
+    for name in _BOUND_CODE_FIELDS:
+        value = resource.get(name)
+        if not isinstance(value, str) or not value:
+            continue
+
+        corrupted = _CODE_CORRUPTION.get(value)
+        if corrupted is None or corrupted == value:
+            continue
+
+        out = copy.deepcopy(resource)
+        out[name] = corrupted
+        return MutationResult(
+            resource=out,
+            description=f"invalid-code-{name}",
+            location=f"{resource['resourceType']}.{name}",
+            original_value=value,
+        )
+
+    return None
+
+
 # Registry of mutations included in the benchmark.
 MUTATIONS: dict[str, Mutation] = {
     "date_format": mutate_date_format,
     "singleton_wrap": mutate_singleton_wrap,
     "missing_required": mutate_missing_required,
     "decimal_format": mutate_decimal_format,
+    "invalid_code_binding": mutate_invalid_code_binding,
 }
 
 
