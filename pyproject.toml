@@ -40,6 +40,10 @@ anthropic = [
 openai = [
     "openai>=1.40.0,<2.0.0",
 ]
+service = [
+    "fastapi>=0.110.0,<1.0.0",
+    "uvicorn>=0.29.0,<1.0.0",
+]
 dev = [
     "mypy>=1.10.0,<2.0.0",
     "pytest>=8.0.0,<10.0.0",
