@@ -87,6 +87,23 @@ CLI:
 fhir-repair fix patient.json --config repair-config.yaml --out fixed.json
 ```
 
+HTTP service (optional, self-hosted only):
+
+```bash
+pip install "fhir-repair[service]"
+uvicorn fhir_repair.service:app --host 0.0.0.0 --port 8000
+
+curl -X POST localhost:8000/repair \
+  -H 'content-type: application/json' \
+  -d '{"resource": {"resourceType": "Patient", "birthDate": "1990-3-5"}}'
+```
+
+The service is a thin wrapper over the same `Repairer`. It is not a hosted
+product and ships no authentication; put it behind your own auth and network
+controls, and never expose it to the public internet. See
+[DEPLOYMENT-COMPLIANCE.md](DEPLOYMENT-COMPLIANCE.md) before running it
+against real data.
+
 See [examples/quickstart.md](examples/quickstart.md) for a complete walkthrough.
 
 ## Configuration
@@ -135,13 +152,13 @@ This is a v0.1 pre-release. Current capabilities:
 - Anthropic and OpenAI LLM provider adapters
 - JSON Lines audit log with sealed v1 schema
 - CLI and Python library
+- Optional self-hosted HTTP service (FastAPI)
 - Starter benchmark corpus (6 hand-curated R4 resources)
 - Benchmark mutation harness with all 8 study-design mutation classes
 - Leaderboard renderer with cumulative runs and per-mutation breakdown
 
 Deferred to later releases:
 
-- FastAPI HTTP service
 - Additional deterministic strategies (invariant)
 - Additional LLM providers (Bedrock, on-prem)
 - Full Synthea-generated benchmark corpus and wild-sample empirical study corpus
