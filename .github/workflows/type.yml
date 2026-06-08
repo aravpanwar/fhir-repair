@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev,anthropic,openai]"
+          pip install -e ".[dev,anthropic,openai,service]"
 
       - name: Run mypy
         run: mypy fhir_repair
