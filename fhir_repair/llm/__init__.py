@@ -1,8 +1,8 @@
 """LLM provider adapters.
 
 The provider interface lives in `base`. Specific adapters (Anthropic,
-OpenAI, Bedrock, on-prem Llama) live in their own modules. v0.1 ships only
-the Anthropic adapter; others can be added without touching core code.
+OpenAI, Bedrock, on-prem Llama) live in their own modules. Anthropic and
+OpenAI ship today; others can be added without touching core code.
 
 Provider adapters are responsible for:
 
@@ -47,9 +47,18 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
             endpoint=config.endpoint or None,
         )
 
-    if provider in ("openai", "bedrock", "on-prem", "azure", "vertex"):
-        # Adapters planned but not shipped in v0.1. Raise a clear error
-        # rather than silently picking a default.
+    if provider == "openai":
+        from fhir_repair.llm.openai import OpenAIProvider
+
+        return OpenAIProvider(
+            api_key=config.api_key or None,
+            model=config.model or "gpt-4o-mini",
+            endpoint=config.endpoint or None,
+        )
+
+    if provider in ("bedrock", "on-prem", "azure", "vertex"):
+        # Adapters planned but not shipped yet. Raise a clear error rather
+        # than silently picking a default.
         raise NotImplementedError(
             f"LLM provider {provider!r} is recognised but not yet implemented. "
             "Implement an adapter in fhir_repair/llm/ that satisfies the "
@@ -58,7 +67,7 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
 
     raise ValueError(
         f"Unknown LLM provider: {config.provider!r}. "
-        "Set llm.provider in repair-config.yaml to one of: anthropic."
+        "Set llm.provider in repair-config.yaml to one of: anthropic, openai."
     )
 
 

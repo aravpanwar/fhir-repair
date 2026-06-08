@@ -47,7 +47,7 @@ def test_build_llm_provider_unknown_raises():
 
 
 def test_build_llm_provider_unimplemented_raises():
-    config = LLMConfig(provider="openai", model="gpt-x", api_key="dummy")
+    config = LLMConfig(provider="bedrock", model="anthropic.claude-x", api_key="dummy")
     with pytest.raises(NotImplementedError, match="not yet implemented"):
         build_llm_provider(config)
 
@@ -75,6 +75,32 @@ def test_build_llm_provider_anthropic(monkeypatch):
 
     assert provider.supports_caching() is True
     assert captured["kwargs"]["api_key"] == "sk-ant-test"
+    assert captured["kwargs"]["base_url"] == "https://example.test"
+
+
+def test_build_llm_provider_openai(monkeypatch):
+    """OpenAI builds when the SDK is importable and an API key is present."""
+    captured: dict = {}
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured["kwargs"] = kwargs
+            self.chat = None
+
+    fake_module = types.ModuleType("openai")
+    fake_module.OpenAI = _FakeOpenAI  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    config = LLMConfig(
+        provider="openai",
+        model="gpt-test",
+        api_key="sk-openai-test",
+        endpoint="https://example.test",
+    )
+    provider = build_llm_provider(config)
+
+    assert provider.supports_caching() is False
+    assert captured["kwargs"]["api_key"] == "sk-openai-test"
     assert captured["kwargs"]["base_url"] == "https://example.test"
 
 
