@@ -66,8 +66,6 @@ class OpenAIProvider:
         keyed by role. The `stable` hint is ignored: OpenAI's prefix cache
         engages automatically when prompts share a leading prefix.
         """
-        messages = [{"role": seg.role, "content": seg.text} for seg in segments]
-
         if not any(seg.role != "system" for seg in segments):
             # The runner always sends a user segment. A system-only request
             # is a caller bug; reject it the same way the Anthropic adapter
@@ -77,23 +75,27 @@ class OpenAIProvider:
                 "must include at least one user segment."
             )
 
+        request: dict[str, Any] = {
+            "model": self._model,
+            "messages": [{"role": seg.role, "content": seg.text} for seg in segments],
+            "max_tokens": kwargs.get("max_tokens", 1024),
+            "temperature": kwargs.get("temperature", 0.0),
+        }
+
         start = time.perf_counter()
-        response = self._client.chat.completions.create(
-            model=self._model,
-            messages=messages,
-            max_tokens=kwargs.get("max_tokens", 1024),
-            temperature=kwargs.get("temperature", 0.0),
-        )
+        response = self._client.chat.completions.create(**request)
         latency_ms = int((time.perf_counter() - start) * 1000)
 
         text = response.choices[0].message.content or ""
 
+        # OpenAI types `usage` as optional; guard rather than assume it is
+        # populated. Missing usage simply reports zero tokens.
         usage = response.usage
         return Completion(
             text=text,
-            input_tokens=usage.prompt_tokens,
-            output_tokens=usage.completion_tokens,
-            cached_tokens=_cached_tokens(usage),
+            input_tokens=usage.prompt_tokens if usage else 0,
+            output_tokens=usage.completion_tokens if usage else 0,
+            cached_tokens=_cached_tokens(usage) if usage else 0,
             latency_ms=latency_ms,
             model=self._model,
             provider="openai",
