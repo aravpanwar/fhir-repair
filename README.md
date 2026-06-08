@@ -136,6 +136,7 @@ This is a v0.1 pre-release. Current capabilities:
 - CLI and Python library
 - Starter benchmark corpus (6 hand-curated R4 resources)
 - Benchmark mutation harness with all 8 study-design mutation classes
+- Leaderboard renderer with cumulative runs and per-mutation breakdown
 
 Deferred to later releases:
 

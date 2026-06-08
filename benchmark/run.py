@@ -10,7 +10,12 @@ Usage:
         --corpus benchmark/corpus/synthea_mutated \\
         --manifest benchmark/corpus/synthea_mutated/manifest.json \\
         --config examples/repair-config.yaml \\
-        --out benchmark/results.json
+        --out benchmark/results.json \\
+        --leaderboard benchmark/leaderboard.json \\
+        --label "claude-opus / v1"
+
+Pass `--leaderboard` to append the run to a cumulative leaderboard file that
+`leaderboard.html` renders. Omit it to write only the single-run results.
 """
 
 from __future__ import annotations
