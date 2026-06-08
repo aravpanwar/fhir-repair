@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev,anthropic]"
+          pip install -e ".[dev,anthropic,service]"
 
       - name: Run unit tests
         # Skip integration and llm markers; those run in dedicated workflows
