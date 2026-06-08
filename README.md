@@ -45,10 +45,11 @@ See [docs/architecture.md](docs/architecture.md) for the full flow.
 pip install fhir-repair
 ```
 
-For the Anthropic LLM provider:
+For an LLM provider (Anthropic or OpenAI):
 
 ```bash
 pip install "fhir-repair[anthropic]"
+pip install "fhir-repair[openai]"
 ```
 
 You will also need a running FHIR validator. The simplest setup is a local
@@ -131,7 +132,7 @@ This is a v0.1 pre-release. Current capabilities:
 - 2 LLM strategies (opt-in via dispatch table):
   `llm.suggest_terminology_match`, generic `llm`
 - HAPI REST validator adapter (pinned to HAPI 7.4.0)
-- Anthropic LLM provider adapter
+- Anthropic and OpenAI LLM provider adapters
 - JSON Lines audit log with sealed v1 schema
 - CLI and Python library
 - Starter benchmark corpus (6 hand-curated R4 resources)
@@ -142,7 +143,7 @@ Deferred to later releases:
 
 - FastAPI HTTP service
 - Additional deterministic strategies (invariant)
-- Additional LLM providers (OpenAI, Bedrock, on-prem)
+- Additional LLM providers (Bedrock, on-prem)
 - Full Synthea-generated benchmark corpus and wild-sample empirical study corpus
 - Public model-vs-prompt benchmark leaderboard
 
