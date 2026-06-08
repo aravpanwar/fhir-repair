@@ -45,3 +45,25 @@ services:
     volumes:
       - ./in:/in:ro
       - ./out:/out
+
+  # Optional: the HTTP service. Reuses the same image but runs uvicorn
+  # instead of the CLI. Self-hosted only; do not expose it to the public
+  # internet without an auth layer in front. Start with:
+  #   docker compose --profile api up
+  api:
+    profiles: [api]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: fhir-repair:local
+    depends_on:
+      - hapi
+    entrypoint: ["uvicorn"]
+    command: ["fhir_repair.service:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      HAPI_BASE_URL: "http://hapi:8080/fhir"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_PROVIDER: "${LLM_PROVIDER:-anthropic}"
+      LLM_MODEL: "${LLM_MODEL:-claude-sonnet-4-6}"
