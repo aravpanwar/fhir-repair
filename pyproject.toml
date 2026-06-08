@@ -37,6 +37,9 @@ dependencies = [
 anthropic = [
     "anthropic>=0.40.0,<1.0.0",
 ]
+openai = [
+    "openai>=1.40.0,<2.0.0",
+]
 dev = [
     "mypy>=1.10.0,<2.0.0",
     "pytest>=8.0.0,<10.0.0",
