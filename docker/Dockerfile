@@ -27,7 +27,7 @@ COPY pyproject.toml README.md LICENSE ./
 COPY fhir_repair ./fhir_repair
 
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip wheel --no-cache-dir --wheel-dir /wheels ".[anthropic]"
+    && pip wheel --no-cache-dir --wheel-dir /wheels ".[anthropic,service]"
 
 
 FROM python:3.11-slim
@@ -37,11 +37,14 @@ FROM python:3.11-slim
 RUN useradd --create-home --uid 1000 repair
 
 COPY --from=builder /wheels /tmp/wheels
-RUN pip install --no-cache-dir --no-index --find-links=/tmp/wheels fhir-repair[anthropic] \
+RUN pip install --no-cache-dir --no-index --find-links=/tmp/wheels fhir-repair[anthropic,service] \
     && rm -rf /tmp/wheels
 
 USER repair
 WORKDIR /home/repair
 
+# Default entrypoint is the CLI. To run the HTTP service instead, override
+# the entrypoint (see the `api` service in docker-compose.yml):
+#   uvicorn fhir_repair.service:app --host 0.0.0.0 --port 8000
 ENTRYPOINT ["fhir-repair"]
 CMD ["--help"]
