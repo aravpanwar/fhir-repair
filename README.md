@@ -7,9 +7,9 @@ A toolkit that takes broken FHIR R4 resources and produces validator-passing
 fixed versions, using a deterministic-first, LLM-fallback approach with
 explicit hallucination guards and full audit logging.
 
-`fhir-repair` is **not** "AI fixes your FHIR." It is **code fixes the easy 80%,
-the LLM only sees the hard interpretive 20%, and nothing invents clinical data
-without saying so**.
+`fhir-repair` is **not** "AI fixes your FHIR." It is **code fixes everything
+code can fix, the LLM sees only the genuinely interpretive remainder, and
+nothing invents clinical data without saying so**.
 
 ## Why
 
@@ -28,9 +28,9 @@ takes in a machine-readable audit log.
    valid, return it as-is.
 3. **Dispatch** each error through a YAML-configurable strategy table:
    deterministic fix, LLM fix, refuse, or escalate to human review.
-4. **Apply** deterministic strategies in parallel (pure functions, no IO),
-   re-validate, then queue any remaining errors for the LLM with a retrieved
-   spec excerpt and a hallucination guard.
+4. **Apply** deterministic strategies in depth-ordered batches (pure
+   functions, no IO), re-validate, then queue any remaining errors for the
+   LLM with a retrieved spec excerpt and a hallucination guard.
 5. **Re-validate** after each round. Roll back any fix that introduces a new
    error. Halt when valid, when budget is exhausted, or when the error set
    stops changing.
