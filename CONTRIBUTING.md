@@ -1,8 +1,7 @@
 # Contributing to fhir-repair
 
 Thank you for considering a contribution. This document explains the project
-scope, the rules around protected health information, the developer
-certificate of origin (DCO) sign-off requirement, and the workflow for
+scope, the rules around protected health information, and the workflow for
 submitting changes.
 
 ## Project scope
@@ -37,24 +36,6 @@ without quoting the content and a maintainer will rewrite history.
 For testing, use [Synthea](https://github.com/synthetichealth/synthea) output
 or [HAPI test fixtures](https://hapifhir.io/). The benchmark corpus is
 documented in [benchmark/corpus/SYNTHEA-GENERATION.md](benchmark/corpus/SYNTHEA-GENERATION.md).
-
-## Developer Certificate of Origin (DCO)
-
-Every commit must be signed off under the [Developer Certificate of Origin
-1.1](https://developercertificate.org/). Add a `Signed-off-by` line by
-committing with `git commit -s`.
-
-Example:
-
-```
-Add normalize_decimal deterministic strategy
-
-Signed-off-by: Jane Developer <jane@example.com>
-```
-
-The DCO certifies that you wrote the change or have the right to submit it
-under the project's license. A GitHub Actions check enforces sign-off on
-every commit; PRs without sign-off cannot merge.
 
 ## Development setup
 
@@ -134,7 +115,7 @@ pytest
 
 1. Fork and create a feature branch.
 2. Open the PR against `main`. Reference the issue it resolves.
-3. CI must pass: lint, type, test, validator-smoke, dco.
+3. CI must pass: lint, type, test, validator-smoke.
 4. A maintainer reviews. Typical turnaround is one week.
 5. PRs adding strategies should include a description of the error class
    they address and an example before/after.
