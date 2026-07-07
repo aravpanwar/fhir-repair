@@ -146,6 +146,19 @@ class LLMStrategy:
                 f"could not parse LLM response: {exc}",
             )
 
+        if new_value is None:
+            # The system prompt asks the model to answer {"value": null} when
+            # it cannot determine the fix with confidence. Honour that as a
+            # refusal instead of writing a literal null over the resource.
+            return refused(
+                error,
+                self.name,
+                self.version,
+                self.permission,
+                before,
+                "LLM returned null, signalling it could not determine the value",
+            )
+
         set_at_path(resource, error.location, new_value)
 
         action = RepairAction(
