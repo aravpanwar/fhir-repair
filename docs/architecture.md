@@ -152,6 +152,28 @@ This makes "what level of LLM autonomy is this run operating at" a
 configuration question with five orthogonal dials, rather than one ambiguous
 boolean.
 
+### Known limitation: the guard gates invocation, not output
+
+The guard authorizes which *class* of change a strategy may attempt before
+it runs. It does not yet verify that the LLM's returned value actually
+stayed within that class. `llm.suggest_terminology_match` holds
+`allow_bind_required_valueset`, but nothing checks that the code it returns
+is a member of the bound ValueSet, and the generic `llm` strategy can return
+any replacement value while holding only the bind permission. A wrong-but-
+well-formed value (a plausible code that is not the right one, or a value
+outside the bound set) is written and re-validated, but not rejected on
+membership grounds.
+
+Two things bound the blast radius today: the repair loop re-validates after
+every LLM fix and rolls back anything that introduces a validator error, and
+every LLM action is written to the audit log with its before/after values
+and full provenance, so no change is silent. What is missing is output-side
+enforcement of the permission scope. Closing it requires a terminology
+service to check ValueSet membership (the `terminology` config exists for
+this and currently defaults to `none`); until then, treat LLM-strategy
+output as recorded-but-unverified and keep the guard permissions
+conservative for runs on data you cannot review.
+
 ## Caching as a provider capability
 
 The Anthropic API offers an explicit `cache_control: {type: "ephemeral"}`

@@ -139,6 +139,14 @@ hallucination_guard:
 See [examples/repair-config.yaml](examples/repair-config.yaml) for the full
 reference.
 
+The guard authorizes which class of change a strategy may attempt, but does
+not yet verify the LLM's output stayed within that class (for example, it
+does not check ValueSet membership on a returned code). Every LLM change is
+re-validated and audited, but keep the permissions conservative for runs on
+data you cannot review. See
+[docs/architecture.md](docs/architecture.md#known-limitation-the-guard-gates-invocation-not-output)
+for detail.
+
 ## Project status
 
 This is a v0.1 pre-release. Current capabilities:
