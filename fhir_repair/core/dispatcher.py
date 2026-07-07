@@ -138,16 +138,38 @@ def detect_regressions(
 ) -> list[ValidationError]:
     """Return errors that did not exist before the batch and that fall on a touched path.
 
-    A regression is a *new* error at a path the batch wrote to. New errors
-    on untouched paths are not regressions; they were merely uncovered by
-    the fix.
+    A regression is a *new* error on or beneath a path the batch wrote to.
+    A fix at `Patient.name` that surfaces a new error at
+    `Patient.name[0].family` counts: the error sits inside the element the
+    batch changed. New errors on genuinely unrelated paths are not
+    regressions; they were merely uncovered by the fix.
     """
     before_set = {(e.code, e.location) for e in before_errors}
     return [
         e
         for e in after_errors
-        if (e.code, e.location) not in before_set and e.location in touched_paths
+        if (e.code, e.location) not in before_set and _on_touched_path(e.location, touched_paths)
     ]
+
+
+def _on_touched_path(location: str, touched_paths: set[str]) -> bool:
+    """True if `location` is a touched path or nested in one (either direction).
+
+    Nesting is matched at segment boundaries so `Patient.name` relates to
+    `Patient.name[0]` and `Patient.name.given`, but `Patient.nameOfCity`
+    (a different element that merely shares a prefix substring) does not.
+    """
+    for touched in touched_paths:
+        if location == touched:
+            return True
+        if _is_descendant(location, touched) or _is_descendant(touched, location):
+            return True
+    return False
+
+
+def _is_descendant(candidate: str, ancestor: str) -> bool:
+    """True if `candidate` is a path nested under `ancestor` at a segment boundary."""
+    return candidate.startswith(f"{ancestor}.") or candidate.startswith(f"{ancestor}[")
 
 
 def is_stuck(prev: list[ValidationError], curr: list[ValidationError]) -> bool:

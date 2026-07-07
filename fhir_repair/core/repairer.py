@@ -25,6 +25,7 @@ from fhir_repair.core.dispatcher import (
     is_stuck,
     snapshot,
 )
+from fhir_repair.core.fhirpath import set_at_path
 from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, RepairResult, ValidationError
 
@@ -165,9 +166,12 @@ class Repairer:
                 # still in `errors` becomes unresolved.
                 unresolved.extend(errors)
 
-            # Anything still failing validation at exit, that we did not
-            # already catalogue, becomes unresolved.
-            if errors and not unresolved:
+            # Anything still failing validation at exit becomes unresolved.
+            # Extend unconditionally: when the loop exits via the stuck
+            # detector with unmapped errors already collected, the guard
+            # `not unresolved` would otherwise drop the mapped-but-unfixed
+            # errors. `_dedupe_errors` removes any overlap.
+            if errors:
                 unresolved.extend(errors)
 
             unresolved = _dedupe_errors(unresolved)
@@ -313,15 +317,15 @@ class Repairer:
     def _reapply_action(self, resource: dict[str, Any], action: RepairAction) -> None:
         """Re-apply an already-recorded action to a fresh resource snapshot.
 
-        Used during sequential retry after a regression rollback. We invoke
-        the strategy again rather than directly writing `action.after`,
-        because some strategies depend on the surrounding context (for
-        example, an LLM strategy with cache state).
+        Used during sequential retry after a regression rollback. We write
+        the recorded `after` value directly rather than invoking the strategy
+        again. Re-invoking an LLM strategy would spend a second call and could
+        return a different value than the one already in the audit log,
+        leaving the resource and its recorded action out of step.
         """
         if action.risk == "refused":
             return
-        strategy = self._registry.get(action.strategy)
-        strategy.apply(resource, action.error)
+        set_at_path(resource, action.error.location, action.after)
 
     def _open_audit(self, resource: dict[str, Any]) -> AuditWriter:
         """Build the AuditWriter for a single resource."""
@@ -329,11 +333,14 @@ class Repairer:
         resource_id = resource.get("id") or uuid.uuid4().hex[:8]
         full_id = f"{resource_type}/{resource_id}"
 
-        # File name encodes resource type and id. Timestamp suffix prevents
-        # collision when the same id is repaired twice in one second.
+        # File name encodes resource type and id. The timestamp is only
+        # second-resolution, so a short random suffix is what actually
+        # prevents a collision when the same id is repaired twice within one
+        # second.
         ts = time.strftime("%Y%m%dT%H%M%S")
+        suffix = uuid.uuid4().hex[:6]
         path = Path(self._config.logging.audit_destination) / (
-            f"{resource_type}-{resource_id}-{ts}.audit.jsonl"
+            f"{resource_type}-{resource_id}-{ts}-{suffix}.audit.jsonl"
         )
 
         return AuditWriter(
