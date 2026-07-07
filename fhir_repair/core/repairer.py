@@ -25,6 +25,7 @@ from fhir_repair.core.dispatcher import (
     is_stuck,
     snapshot,
 )
+from fhir_repair.core.fhirpath import set_at_path
 from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, RepairResult, ValidationError
 
@@ -316,15 +317,15 @@ class Repairer:
     def _reapply_action(self, resource: dict[str, Any], action: RepairAction) -> None:
         """Re-apply an already-recorded action to a fresh resource snapshot.
 
-        Used during sequential retry after a regression rollback. We invoke
-        the strategy again rather than directly writing `action.after`,
-        because some strategies depend on the surrounding context (for
-        example, an LLM strategy with cache state).
+        Used during sequential retry after a regression rollback. We write
+        the recorded `after` value directly rather than invoking the strategy
+        again. Re-invoking an LLM strategy would spend a second call and could
+        return a different value than the one already in the audit log,
+        leaving the resource and its recorded action out of step.
         """
         if action.risk == "refused":
             return
-        strategy = self._registry.get(action.strategy)
-        strategy.apply(resource, action.error)
+        set_at_path(resource, action.error.location, action.after)
 
     def _open_audit(self, resource: dict[str, Any]) -> AuditWriter:
         """Build the AuditWriter for a single resource."""

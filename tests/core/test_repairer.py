@@ -44,6 +44,51 @@ def _config(tmp_path) -> RepairConfig:
     )
 
 
+class _CountingStrategy:
+    name = "stub.count"
+    version = "1.0.0"
+    permission = "allow_reformat"
+    risk = "low"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def apply(self, resource: dict, error: ValidationError) -> RepairAction:
+        self.calls += 1
+        return refused(error, self.name, self.version, self.permission, None, "counting")
+
+
+def test_reapply_writes_recorded_value_without_reinvoking_strategy(tmp_path):
+    # On rollback retry, the recorded `after` is written directly. Re-invoking
+    # the strategy would risk a divergent (and, for an LLM, billable) result.
+    counting = _CountingStrategy()
+    registry = StrategyRegistry()
+    registry.register(counting)
+
+    repairer = Repairer(
+        validator=_ConstantValidator([]),
+        registry=registry,
+        config=_config(tmp_path),
+    )
+
+    resource = {"resourceType": "Patient", "gender": "M"}
+    action = RepairAction(
+        error=ValidationError("c", "error", "Patient.gender", ""),
+        strategy="stub.count",
+        strategy_version="1.0.0",
+        risk="low",
+        permission_used="allow_reformat",
+        before="M",
+        after="male",
+        explanation="",
+    )
+
+    repairer._reapply_action(resource, action)
+
+    assert resource["gender"] == "male"
+    assert counting.calls == 0
+
+
 def test_mapped_but_unfixed_errors_are_reported_unresolved(tmp_path):
     # A mapped error that never gets fixed and an unmapped error together.
     # The unmapped error populates `unresolved` early; the mapped one must
