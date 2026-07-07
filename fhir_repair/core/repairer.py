@@ -165,9 +165,12 @@ class Repairer:
                 # still in `errors` becomes unresolved.
                 unresolved.extend(errors)
 
-            # Anything still failing validation at exit, that we did not
-            # already catalogue, becomes unresolved.
-            if errors and not unresolved:
+            # Anything still failing validation at exit becomes unresolved.
+            # Extend unconditionally: when the loop exits via the stuck
+            # detector with unmapped errors already collected, the guard
+            # `not unresolved` would otherwise drop the mapped-but-unfixed
+            # errors. `_dedupe_errors` removes any overlap.
+            if errors:
                 unresolved.extend(errors)
 
             unresolved = _dedupe_errors(unresolved)
