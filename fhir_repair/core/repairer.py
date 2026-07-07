@@ -333,11 +333,14 @@ class Repairer:
         resource_id = resource.get("id") or uuid.uuid4().hex[:8]
         full_id = f"{resource_type}/{resource_id}"
 
-        # File name encodes resource type and id. Timestamp suffix prevents
-        # collision when the same id is repaired twice in one second.
+        # File name encodes resource type and id. The timestamp is only
+        # second-resolution, so a short random suffix is what actually
+        # prevents a collision when the same id is repaired twice within one
+        # second.
         ts = time.strftime("%Y%m%dT%H%M%S")
+        suffix = uuid.uuid4().hex[:6]
         path = Path(self._config.logging.audit_destination) / (
-            f"{resource_type}-{resource_id}-{ts}.audit.jsonl"
+            f"{resource_type}-{resource_id}-{ts}-{suffix}.audit.jsonl"
         )
 
         return AuditWriter(

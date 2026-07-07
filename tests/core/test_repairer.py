@@ -89,6 +89,16 @@ def test_reapply_writes_recorded_value_without_reinvoking_strategy(tmp_path):
     assert counting.calls == 0
 
 
+def test_audit_filenames_do_not_collide_within_one_second(tmp_path):
+    # Same resource id repaired twice in the same second must still get
+    # distinct audit files; the second-resolution timestamp alone cannot
+    # guarantee that, so a random suffix does.
+    repairer = Repairer(validator=_ConstantValidator([]), config=_config(tmp_path))
+    first = repairer._open_audit({"resourceType": "Patient", "id": "same"})
+    second = repairer._open_audit({"resourceType": "Patient", "id": "same"})
+    assert first._destination != second._destination
+
+
 def test_mapped_but_unfixed_errors_are_reported_unresolved(tmp_path):
     # A mapped error that never gets fixed and an unmapped error together.
     # The unmapped error populates `unresolved` early; the mapped one must
