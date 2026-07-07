@@ -121,6 +121,22 @@ def test_detect_regressions_ignores_new_errors_on_untouched_paths():
     assert regressions == []
 
 
+def test_detect_regressions_flags_new_errors_nested_under_touched_path():
+    before = [_err("a", "Patient.name")]
+    after = [_err("a", "Patient.name"), _err("b", "Patient.name[0].family")]
+    regressions = detect_regressions(before, after, {"Patient.name"})
+    assert len(regressions) == 1
+    assert regressions[0].code == "b"
+
+
+def test_detect_regressions_ignores_prefix_substring_paths():
+    # A different element that merely shares a string prefix is not nested.
+    before = [_err("a", "Patient.name")]
+    after = [_err("a", "Patient.name"), _err("b", "Patient.nameOfCity")]
+    regressions = detect_regressions(before, after, {"Patient.name"})
+    assert regressions == []
+
+
 def test_is_stuck_detects_identical_error_sets():
     a = [_err("x", "Patient.foo"), _err("y", "Patient.bar")]
     b = [_err("y", "Patient.bar"), _err("x", "Patient.foo")]
