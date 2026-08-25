@@ -57,6 +57,9 @@ dev = [
     # what contributors run locally.
     "ruff>=0.15.0,<0.16.0",
     "types-PyYAML",
+    # boto3 ships no inline types, so the bedrock adapter needs stubs to
+    # type-check. Only the bedrock-runtime client is used.
+    "boto3-stubs[bedrock-runtime]",
 ]
 
 [project.urls]
