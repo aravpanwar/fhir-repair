@@ -314,6 +314,10 @@ def mutate_corpus(
 
     for resource_path in sorted(valid_dir.glob("*.json")):
         resource = json.loads(resource_path.read_text(encoding="utf-8"))
+        if not isinstance(resource, dict) or "resourceType" not in resource:
+            # Not a FHIR resource. Manifests and notes get dropped in corpus
+            # directories; skipping them beats crashing halfway through a run.
+            continue
         for mutation_name, mutation_fn in MUTATIONS.items():
             result = mutation_fn(resource, rng)
             if result is None:
