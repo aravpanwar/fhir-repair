@@ -6,6 +6,7 @@ import pytest
 
 from fhir_repair.core.fhirpath import (
     _parse_simple_path,
+    delete_at_path,
     get_at_path,
     set_at_path,
 )
@@ -66,3 +67,65 @@ def test_set_at_path_handles_choice_element_notation():
     }
     set_at_path(resource, "Observation.value.ofType(Quantity).value", 71.0)
     assert resource["valueQuantity"]["value"] == 71.0
+
+
+def test_delete_at_path_removes_top_level_field():
+    resource = {"resourceType": "Observation", "status": "final", "dataAbsentReason": {}}
+    assert delete_at_path(resource, "Observation.dataAbsentReason") is True
+    assert "dataAbsentReason" not in resource
+    assert resource["status"] == "final"
+
+
+def test_delete_at_path_removes_nested_field():
+    resource = {
+        "resourceType": "Patient",
+        "contact": [{"name": {"text": "A"}, "gender": "female"}],
+    }
+    assert delete_at_path(resource, "Patient.contact[0].gender") is True
+    assert resource["contact"][0] == {"name": {"text": "A"}}
+
+
+def test_delete_at_path_removes_list_entry_and_shifts():
+    """A list with a hole is not representable, so entries shift down."""
+    resource = {
+        "resourceType": "Patient",
+        "telecom": [
+            {"system": "phone", "value": "1"},
+            {"system": "email", "value": "2"},
+            {"system": "fax", "value": "3"},
+        ],
+    }
+    assert delete_at_path(resource, "Patient.telecom[1]") is True
+    assert [t["value"] for t in resource["telecom"]] == ["1", "3"]
+
+
+def test_delete_at_path_absent_field_returns_false():
+    resource = {"resourceType": "Observation", "status": "final"}
+    assert delete_at_path(resource, "Observation.dataAbsentReason") is False
+    assert resource == {"resourceType": "Observation", "status": "final"}
+
+
+def test_delete_at_path_absent_parent_returns_false():
+    resource = {"resourceType": "Observation", "status": "final"}
+    assert delete_at_path(resource, "Observation.code.coding[0]") is False
+
+
+def test_delete_at_path_out_of_range_index_returns_false():
+    resource = {"resourceType": "Patient", "telecom": [{"value": "1"}]}
+    assert delete_at_path(resource, "Patient.telecom[3]") is False
+    assert len(resource["telecom"]) == 1
+
+
+def test_delete_at_path_handles_choice_element_notation():
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": 70.5, "unit": "kg"},
+    }
+    assert delete_at_path(resource, "Observation.value.ofType(Quantity)") is True
+    assert "valueQuantity" not in resource
+
+
+def test_delete_at_path_rejects_bare_resource_type():
+    resource = {"resourceType": "Observation"}
+    with pytest.raises(ValueError):
+        delete_at_path(resource, "Observation")

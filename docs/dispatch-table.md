@@ -43,9 +43,21 @@ strategies:
   unexpected-array: deterministic.unwrap_singleton
   invalid-code-binding: llm.suggest_terminology_match
   missing-required-element: refuse
-  invariant-failed: llm
+  invariant-failed: llm.resolve_invariant
   unknown-error: llm
 ```
+
+## Removal-only strategies
+
+Most strategies replace the value at the error path. `llm.resolve_invariant`
+is different: it may only *remove* the flagged element. Invariants constrain
+several elements at once, so the repair is a choice about which element to
+drop rather than a rewrite, and restricting the strategy to removal means it
+cannot introduce clinical content that was not in the input.
+
+Because dropping submitted data is still a change to existing content, it
+requires `allow_change_existing_clinical_value`, which is denied by default.
+A removal is recorded in the audit log with `after` set to null.
 
 ## Resolution rules
 

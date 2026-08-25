@@ -51,6 +51,13 @@ strategies:
   # credentials in the llm: section below):
   #
   # invalid-code-binding: llm.suggest_terminology_match
+  #
+  # Invariant violations (e.g. Observation obs-7, where a value and a
+  # dataAbsentReason cannot both be present). The strategy may only remove
+  # the flagged element, never write a value, but removing submitted data
+  # still needs allow_change_existing_clinical_value below.
+  #
+  # invariant-failed: llm.resolve_invariant
 
 # LLM provider configuration. Credentials come from environment variables;
 # never inline them in this file.

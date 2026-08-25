@@ -59,6 +59,13 @@ class RepairAction:
     # None for deterministic strategies.
     llm: dict[str, Any] | None = None
 
+    # True when the repair removed the element rather than replacing it.
+    # `after` is None in that case, which is indistinguishable from a fix
+    # that legitimately wrote null, so rollback-retry needs this flag to
+    # replay the action as a deletion instead of writing a literal null.
+    # Not part of the sealed v1 audit schema; the writer ignores it.
+    removed: bool = False
+
 
 @dataclass
 class RepairResult:

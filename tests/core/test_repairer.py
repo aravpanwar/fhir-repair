@@ -89,6 +89,39 @@ def test_reapply_writes_recorded_value_without_reinvoking_strategy(tmp_path):
     assert counting.calls == 0
 
 
+def test_reapply_replays_a_removal_as_a_deletion(tmp_path):
+    # A removal records after=None. Replaying it as a write would leave a
+    # literal null where the element was, which is still invalid, so the
+    # action carries a flag that says to delete instead.
+    repairer = Repairer(
+        validator=_ConstantValidator([]),
+        registry=StrategyRegistry(),
+        config=_config(tmp_path),
+    )
+
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": 72},
+        "dataAbsentReason": {"coding": []},
+    }
+    action = RepairAction(
+        error=ValidationError("invariant-failed", "error", "Observation.dataAbsentReason", ""),
+        strategy="llm.resolve_invariant",
+        strategy_version="1.0.0",
+        risk="high",
+        permission_used="allow_change_existing_clinical_value",
+        before={"coding": []},
+        after=None,
+        removed=True,
+        explanation="",
+    )
+
+    repairer._reapply_action(resource, action)
+
+    assert "dataAbsentReason" not in resource
+    assert resource["valueQuantity"] == {"value": 72}
+
+
 def test_audit_filenames_do_not_collide_within_one_second(tmp_path):
     # Same resource id repaired twice in the same second must still get
     # distinct audit files; the second-resolution timestamp alone cannot

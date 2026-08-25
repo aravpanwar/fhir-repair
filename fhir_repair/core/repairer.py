@@ -25,7 +25,7 @@ from fhir_repair.core.dispatcher import (
     is_stuck,
     snapshot,
 )
-from fhir_repair.core.fhirpath import set_at_path
+from fhir_repair.core.fhirpath import delete_at_path, set_at_path
 from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, RepairResult, ValidationError
 
@@ -95,11 +95,12 @@ class Repairer:
 
         resolved_provider = provider or build_llm_provider(self._config.llm)
 
-        # `register_default_llm_strategies` adds two strategies. If the user
-        # supplied a custom registry that already has them (or replacements),
-        # we honour that and skip; otherwise we register defaults.
+        # `register_default_llm_strategies` adds the built-in LLM strategies.
+        # If the user supplied a custom registry that already has them (or
+        # replacements), we honour that and skip; otherwise we register
+        # defaults.
         existing = set(self._registry.names())
-        defaults = {"llm", "llm.suggest_terminology_match"}
+        defaults = {"llm", "llm.suggest_terminology_match", "llm.resolve_invariant"}
         if defaults.issubset(existing):
             return
         register_default_llm_strategies(
@@ -324,6 +325,11 @@ class Repairer:
         leaving the resource and its recorded action out of step.
         """
         if action.risk == "refused":
+            return
+        if action.removed:
+            # Replaying a removal as a write would put a literal null where
+            # the element used to be, which is not what the strategy did.
+            delete_at_path(resource, action.error.location)
             return
         set_at_path(resource, action.error.location, action.after)
 
