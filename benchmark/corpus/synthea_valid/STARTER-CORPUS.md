@@ -13,16 +13,17 @@ on a small fixture without first installing Java and Synthea. It is
 | Item | Where it lives |
 |---|---|
 | Starter corpus (this directory) | committed to git, 6 resources, used for smoke-testing the harness |
-| Full Synthea-generated corpus (planned for v0.2) | regenerated locally per `SYNTHEA-GENERATION.md`, target ~100 resources, used for the leaderboard |
+| Full Synthea-generated corpus | committed to git at [../synthea_full/](../synthea_full/), 100 resources, used for the benchmark and leaderboard |
 | Wild sample corpus (planned for v0.2) | per `wild_sample.SCREENING.md`, used for the empirical study only |
+
+The full corpus is now committed, so it no longer replaces this directory.
+This one stays because it is the fixture that needs no Java.
 
 ## Why hand-curated and not Synthea
 
-Generating real Synthea output requires Java, Gradle, and a 5-10 minute
+Generating real Synthea output requires Java 11+, Gradle, and a 5-10 minute
 build. Most contributors will only ever want to run the harness once to
-confirm it works, and the starter corpus is enough for that. When the
-empirical study moves into focus, regenerate the full corpus per
-`SYNTHEA-GENERATION.md` and replace these files.
+confirm it works, and the starter corpus is enough for that.
 
 ## How to verify
 
