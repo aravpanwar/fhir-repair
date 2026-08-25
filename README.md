@@ -166,15 +166,18 @@ This is a v0.1 pre-release. Current capabilities:
 - JSON Lines audit log with sealed v1 schema
 - CLI and Python library
 - Optional self-hosted HTTP service (FastAPI)
-- Starter benchmark corpus (6 hand-curated R4 resources)
+- Starter benchmark corpus (6 hand-curated R4 resources) plus the full
+  100-resource Synthea corpus, both committed
 - Benchmark mutation harness with all 8 study-design mutation classes
 - Leaderboard renderer with cumulative runs and per-mutation breakdown
+- Published benchmark baseline on the full corpus: see [RESULTS.md](RESULTS.md)
 
 Deferred to later releases:
 
 - Additional LLM providers (Azure OpenAI, Vertex AI)
-- Full Synthea-generated benchmark corpus and wild-sample empirical study corpus
-- Public model-vs-prompt benchmark leaderboard
+- Wild-sample empirical study corpus
+- Public model-vs-prompt benchmark leaderboard (an LLM-enabled benchmark run;
+  the published baseline is deterministic strategies only)
 
 ## Deployment and compliance
 
