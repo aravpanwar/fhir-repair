@@ -46,8 +46,10 @@ def test_build_llm_provider_unknown_raises():
         build_llm_provider(config)
 
 
-def test_build_llm_provider_unimplemented_raises():
-    config = LLMConfig(provider="bedrock", model="anthropic.claude-x", api_key="dummy")
+@pytest.mark.parametrize("provider", ["azure", "vertex"])
+def test_build_llm_provider_unimplemented_raises(provider):
+    """Recognised but unshipped providers fail loudly, not silently."""
+    config = LLMConfig(provider=provider, model="x", api_key="dummy")
     with pytest.raises(NotImplementedError, match="not yet implemented"):
         build_llm_provider(config)
 
@@ -102,6 +104,64 @@ def test_build_llm_provider_openai(monkeypatch):
     assert provider.supports_caching() is False
     assert captured["kwargs"]["api_key"] == "sk-openai-test"
     assert captured["kwargs"]["base_url"] == "https://example.test"
+
+
+def test_build_llm_provider_bedrock(monkeypatch):
+    """Bedrock builds from the AWS credential chain, with no api_key."""
+    captured: dict = {}
+
+    def _client(service, **kwargs):
+        captured["service"] = service
+        captured["kwargs"] = kwargs
+        return object()
+
+    fake_module = types.ModuleType("boto3")
+    fake_module.client = _client  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "boto3", fake_module)
+    monkeypatch.setenv("AWS_REGION", "eu-west-2")
+
+    config = LLMConfig(provider="bedrock", model="anthropic.claude-test-v1:0")
+    provider = build_llm_provider(config)
+
+    assert provider.supports_caching() is True
+    assert captured["service"] == "bedrock-runtime"
+    assert captured["kwargs"]["region_name"] == "eu-west-2"
+
+
+def test_build_llm_provider_on_prem(monkeypatch):
+    """On-prem builds against a local OpenAI-compatible server."""
+    captured: dict = {}
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured["kwargs"] = kwargs
+            self.chat = None
+
+    fake_module = types.ModuleType("openai")
+    fake_module.OpenAI = _FakeOpenAI  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    config = LLMConfig(
+        provider="on-prem",
+        model="llama-3.1-8b",
+        endpoint="http://localhost:8000/v1",
+    )
+    provider = build_llm_provider(config)
+
+    assert provider.supports_caching() is False
+    assert captured["kwargs"]["base_url"] == "http://localhost:8000/v1"
+
+
+def test_build_llm_provider_on_prem_without_endpoint_raises(monkeypatch):
+    """No silent fallback to a public endpoint."""
+    fake_module = types.ModuleType("openai")
+    fake_module.OpenAI = lambda **kwargs: None  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+    monkeypatch.delenv("LLM_ENDPOINT", raising=False)
+
+    config = LLMConfig(provider="on-prem", model="llama-3.1-8b")
+    with pytest.raises(ValueError, match="endpoint"):
+        build_llm_provider(config)
 
 
 def test_register_default_llm_strategies_adds_expected_names():

@@ -40,6 +40,9 @@ anthropic = [
 openai = [
     "openai>=1.40.0,<2.0.0",
 ]
+bedrock = [
+    "boto3>=1.34.0,<2.0.0",
+]
 service = [
     "fastapi>=0.110.0,<1.0.0",
     "uvicorn>=0.29.0,<1.0.0",
@@ -54,6 +57,9 @@ dev = [
     # what contributors run locally.
     "ruff>=0.15.0,<0.16.0",
     "types-PyYAML",
+    # boto3 ships no inline types, so the bedrock adapter needs stubs to
+    # type-check. Only the bedrock-runtime client is used.
+    "boto3-stubs[bedrock-runtime]",
 ]
 
 [project.urls]
