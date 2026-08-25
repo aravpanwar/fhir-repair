@@ -58,6 +58,20 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
             endpoint=config.endpoint or None,
         )
 
+    if provider == "deepseek":
+        from fhir_repair.llm.openai import OpenAIProvider
+
+        # DeepSeek serves the OpenAI Chat Completions wire format, so the
+        # OpenAI adapter drives it unchanged. It gets its own branch rather
+        # than being a documented `openai` + endpoint recipe so the audit
+        # log and the leaderboard record which vendor actually answered.
+        return OpenAIProvider(
+            api_key=config.api_key or None,
+            model=config.model or "deepseek-v4-flash",
+            endpoint=config.endpoint or "https://api.deepseek.com/v1",
+            provider_name="deepseek",
+        )
+
     if provider == "bedrock":
         from fhir_repair.llm.bedrock import BedrockProvider
 
@@ -95,7 +109,8 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
 
     raise ValueError(
         f"Unknown LLM provider: {config.provider!r}. Set llm.provider in "
-        "repair-config.yaml to one of: anthropic, openai, bedrock, on-prem."
+        "repair-config.yaml to one of: anthropic, openai, deepseek, bedrock, "
+        "on-prem."
     )
 
 

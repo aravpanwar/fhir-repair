@@ -29,6 +29,7 @@ class OpenAIProvider:
         api_key: str | None = None,
         model: str = "gpt-4o-mini",
         endpoint: str | None = None,
+        provider_name: str = "openai",
     ) -> None:
         # Imported lazily so the package can be loaded on systems without
         # the optional `openai` dependency installed.
@@ -54,6 +55,11 @@ class OpenAIProvider:
             base_url=endpoint,
         )
         self._model = model
+        # Reported in the audit log and the leaderboard. Overridable because
+        # several vendors serve this exact wire format from their own
+        # endpoint, and a run against one of them should not claim to be an
+        # OpenAI run.
+        self._provider_name = provider_name
 
     def complete(
         self,
@@ -98,7 +104,7 @@ class OpenAIProvider:
             cached_tokens=_cached_tokens(usage) if usage else 0,
             latency_ms=latency_ms,
             model=self._model,
-            provider="openai",
+            provider=self._provider_name,
         )
 
     def supports_caching(self) -> bool:

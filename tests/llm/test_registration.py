@@ -106,6 +106,73 @@ def test_build_llm_provider_openai(monkeypatch):
     assert captured["kwargs"]["base_url"] == "https://example.test"
 
 
+def test_build_llm_provider_deepseek(monkeypatch):
+    """DeepSeek speaks the OpenAI wire format, so it reuses that adapter."""
+    captured: dict = {}
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured["kwargs"] = kwargs
+            self.chat = None
+
+    fake_module = types.ModuleType("openai")
+    fake_module.OpenAI = _FakeOpenAI  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    config = LLMConfig(provider="deepseek", model="deepseek-v4-pro", api_key="sk-ds")
+    provider = build_llm_provider(config)
+
+    # Endpoint defaults so a DeepSeek run needs only provider, model, key.
+    assert captured["kwargs"]["base_url"] == "https://api.deepseek.com/v1"
+    assert captured["kwargs"]["api_key"] == "sk-ds"
+    assert provider.supports_caching() is False
+
+
+def test_deepseek_run_is_not_recorded_as_openai(monkeypatch):
+    """Audit and leaderboard provenance must name the vendor that answered."""
+    from fhir_repair.core.models import PromptSegment
+
+    class _Usage:
+        prompt_tokens = 7
+        completion_tokens = 3
+
+    class _Message:
+        content = '{"value": "final"}'
+
+    class _Choice:
+        message = _Message()
+
+    class _Response:
+        usage = _Usage()
+
+        def __init__(self):
+            self.choices = [_Choice()]
+
+    class _Completions:
+        def create(self, **kwargs):
+            return _Response()
+
+    class _Chat:
+        def __init__(self):
+            self.completions = _Completions()
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.chat = _Chat()
+
+    fake_module = types.ModuleType("openai")
+    fake_module.OpenAI = _FakeOpenAI  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    config = LLMConfig(provider="deepseek", model="deepseek-v4-flash", api_key="sk-ds")
+    completion = build_llm_provider(config).complete(
+        [PromptSegment(role="user", text="hi", stable=False)]
+    )
+
+    assert completion.provider == "deepseek"
+    assert completion.model == "deepseek-v4-flash"
+
+
 def test_build_llm_provider_bedrock(monkeypatch):
     """Bedrock builds from the AWS credential chain, with no api_key."""
     captured: dict = {}
