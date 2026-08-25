@@ -52,12 +52,20 @@ strategies:
   #
   # invalid-code-binding: llm.suggest_terminology_match
   #
-  # Invariant violations (e.g. Observation obs-7, where a value and a
+  # Invariant violations (e.g. Observation obs-6, where a value and a
   # dataAbsentReason cannot both be present). The strategy may only remove
-  # the flagged element, never write a value, but removing submitted data
-  # still needs allow_change_existing_clinical_value below.
+  # an element, never write a value, but removing submitted data still needs
+  # allow_change_existing_clinical_value below.
   #
-  # invariant-failed: llm.resolve_invariant
+  # HAPI reports invariant failures with the code `processing`, not
+  # `invariant-failed`, so this belongs at the end of the `processing` chain
+  # above rather than in an entry of its own. Put it last: it removes data,
+  # so every value-preserving strategy should get a chance first.
+  #
+  #   processing:
+  #     - deterministic.normalize_date
+  #     ...
+  #     - llm.resolve_invariant
 
 # LLM provider configuration. Credentials come from environment variables;
 # never inline them in this file.

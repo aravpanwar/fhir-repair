@@ -188,9 +188,9 @@ def mutate_invariant_violation(
     resource: dict[str, Any],
     rng: random.Random,
 ) -> MutationResult | None:
-    """Violate Observation invariant obs-7.
+    """Violate Observation invariant obs-6.
 
-    obs-7 states that `dataAbsentReason` may only be present when no value is
+    obs-6 states that `dataAbsentReason` may only be present when no value is
     present. Adding it next to an existing `valueQuantity` breaks the
     invariant while keeping the resource well-formed JSON. The fix is to
     drop the added field, so the ground truth is the pre-mutation resource.
@@ -204,7 +204,7 @@ def mutate_invariant_violation(
     out["dataAbsentReason"] = copy.deepcopy(_DATA_ABSENT_REASON)
     return MutationResult(
         resource=out,
-        description="invariant-obs7-value-and-absent",
+        description="invariant-obs6-value-and-absent",
         location=f"{resource['resourceType']}.dataAbsentReason",
         original_value=None,
     )
