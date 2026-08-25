@@ -115,13 +115,12 @@ class RepairConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
     @model_validator(mode="after")
-    def _validate_consistency(self) -> "RepairConfig":
+    def _validate_consistency(self) -> RepairConfig:
         """Post-load sanity checks that go beyond per-field types.
 
         These run after all fields have been parsed. They give early,
         readable errors for configurations that type-check but are
-        semantically broken (e.g., empty dispatch chains, missing LLM
-        provider when LLM strategies are referenced).
+        semantically broken (e.g., empty dispatch chains).
         """
         # Dispatch table: every entry must be non-empty.
         for code, strategy_ids in self.strategies.items():
@@ -133,9 +132,7 @@ class RepairConfig(BaseModel):
                 )
             for sid in ids:
                 if not isinstance(sid, str) or not sid.strip():
-                    raise ValueError(
-                        f"empty strategy id in dispatch table entry for {code!r}"
-                    )
+                    raise ValueError(f"empty strategy id in dispatch table entry for {code!r}")
 
         # Limits must be positive.
         if self.limits.max_attempts < 1:
@@ -143,23 +140,7 @@ class RepairConfig(BaseModel):
         if self.limits.max_llm_calls_per_resource < 1:
             raise ValueError("limits.max_llm_calls_per_resource must be >= 1")
 
-        # If the dispatch table references LLM strategies, the LLM
-        # provider must be configured.
-        if self._dispatch_uses_llm() and not self.llm.provider:
-            raise ValueError(
-                "dispatch table references LLM strategies "
-                "(e.g. 'llm' or 'llm.*') but llm.provider is not set"
-            )
-
         return self
-
-    def _dispatch_uses_llm(self) -> bool:
-        """True if any dispatch table value names an LLM strategy."""
-        for value in self.strategies.values():
-            ids = [value] if isinstance(value, str) else list(value)
-            if any(sid == "llm" or sid.startswith("llm.") for sid in ids):
-                return True
-        return False
 
 
 def load_config(path: str | Path) -> RepairConfig:
