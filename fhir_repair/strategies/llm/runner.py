@@ -315,9 +315,8 @@ def register_default_llm_strategies(
     `allow_change_existing_clinical_value`, which is denied by default.
     Adjust the config's permissions to enable or disable.
     """
-    # Imported here rather than at module scope: invariant.py imports the
-    # DELETE sentinel from this module, so a top-level import would be
-    # circular.
+    # Imported here rather than at module scope to keep the import graph
+    # between the runner and the individual strategies one-directional.
     from fhir_repair.strategies.llm import invariant as invariant_mod
 
     registry.register(
@@ -335,21 +334,13 @@ def register_default_llm_strategies(
             backoff_max_s=backoff_max_s,
         )
     )
+    # Not an LLMStrategy: an invariant failure is reported against the
+    # resource, so the element to remove has to come from the model's answer
+    # rather than the error location. See invariant.py.
     registry.register(
-        LLMStrategy(
-            name=invariant_mod.NAME,
-            version=invariant_mod.VERSION,
-            permission=invariant_mod.PERMISSION,
-            risk=invariant_mod.RISK,
-            prompt_path=_PROMPTS_DIR / "repair_invariant.v1.jinja",
-            prompt_version=prompt_version,
+        invariant_mod.InvariantStrategy(
             provider=provider,
-            retriever=retriever,
-            parser=invariant_mod.parse_invariant_response,
-            system_prompt=invariant_mod.SYSTEM_PROMPT,
-            max_retries=max_retries,
-            backoff_base_s=backoff_base_s,
-            backoff_max_s=backoff_max_s,
+            prompt_version=prompt_version,
         )
     )
     registry.register(
