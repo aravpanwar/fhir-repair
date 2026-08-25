@@ -16,6 +16,12 @@ Synthea is Apache 2.0. The generated data is released under CC0, with no
 attribution requirement and no PHI risk. We commit the generated JSON
 files directly to the repository.
 
+## Prerequisites
+
+Synthea v3.3.0 needs **Java 11 or newer**. Check with `java -version` before
+running the build; an older JDK fails partway through `./gradlew build` with
+an unhelpful class-version error.
+
 ## Generation command
 
 ```bash
@@ -38,6 +44,13 @@ resources from each bundle to populate `synthea_valid/`.
 
 ## Extraction
 
+Synthea exports one transaction Bundle per patient, each holding hundreds of
+entries. The benchmark wants a flat directory of single resources:
+
+```bash
+python -m benchmark.extract_synthea output/fhir benchmark/corpus/synthea_valid
+```
+
 The extractor selects 20 resources from each of these types:
 
 - `Patient`
@@ -46,10 +59,22 @@ The extractor selects 20 resources from each of these types:
 - `MedicationRequest`
 - `Encounter`
 
-Extraction script (planned: `tools/extract_synthea.py`) walks each bundle,
-filters by `resourceType`, removes generated UUIDs to reduce noise in
-diffs, and writes one resource per JSON file under
-`synthea_valid/<resource_type>/<original-id>.json`.
+Override the quota with `--per-type N`.
+
+Files are written as `synthea_valid/<Type>-NNN.json`, the flat layout the
+mutation harness globs. Two transformations are applied on the way out:
+
+- `meta` and the generated `text` narrative are stripped. Both add diff
+  churn without affecting validation.
+- `urn:uuid:` references are rewritten to `<Type>/<id>` when the target is
+  in the same bundle, and dropped when it is not. Extracting a resource out
+  of its bundle otherwise leaves dangling references, which HAPI reports as
+  errors in every run, before any mutation is applied.
+
+A manifest recording the source bundle and original id of each file is
+written alongside the corpus directory as `<name>-extraction.json`. It is
+deliberately not inside the corpus directory, because the mutation harness
+globs `*.json` there.
 
 ## Validation
 
