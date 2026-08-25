@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from fhir_repair.core.guard import HallucinationGuard
 
@@ -113,6 +113,34 @@ class RepairConfig(BaseModel):
     hallucination_guard: HallucinationGuardConfig = Field(default_factory=HallucinationGuardConfig)
     limits: LimitsConfig = Field(default_factory=LimitsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+
+    @model_validator(mode="after")
+    def _validate_consistency(self) -> RepairConfig:
+        """Post-load sanity checks that go beyond per-field types.
+
+        These run after all fields have been parsed. They give early,
+        readable errors for configurations that type-check but are
+        semantically broken (e.g., empty dispatch chains).
+        """
+        # Dispatch table: every entry must be non-empty.
+        for code, strategy_ids in self.strategies.items():
+            ids = [strategy_ids] if isinstance(strategy_ids, str) else list(strategy_ids)
+            if not ids:
+                raise ValueError(
+                    f"dispatch table entry for {code!r} is empty; "
+                    f"use a non-empty string or list of strings"
+                )
+            for sid in ids:
+                if not isinstance(sid, str) or not sid.strip():
+                    raise ValueError(f"empty strategy id in dispatch table entry for {code!r}")
+
+        # Limits must be positive.
+        if self.limits.max_attempts < 1:
+            raise ValueError("limits.max_attempts must be >= 1")
+        if self.limits.max_llm_calls_per_resource < 1:
+            raise ValueError("limits.max_llm_calls_per_resource must be >= 1")
+
+        return self
 
 
 def load_config(path: str | Path) -> RepairConfig:
