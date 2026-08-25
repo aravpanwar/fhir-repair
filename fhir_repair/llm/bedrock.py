@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Mapping
 from typing import Any
 
 from fhir_repair.core.models import PromptSegment
@@ -132,7 +133,10 @@ class BedrockProvider:
         return True
 
 
-def _extract_text(response: dict[str, Any]) -> str:
+# The boto3 stubs type a Converse response as a TypedDict, not a plain
+# dict. These helpers only read from it, so they take the widest mapping
+# that both a TypedDict and a test fixture satisfy.
+def _extract_text(response: Mapping[str, Any]) -> str:
     """Concatenate the text blocks of a Converse response.
 
     Converse returns `output.message.content` as a list of blocks. Only
@@ -144,7 +148,7 @@ def _extract_text(response: dict[str, Any]) -> str:
     return "".join(parts)
 
 
-def _usage_field(response: dict[str, Any], name: str) -> int:
+def _usage_field(response: Mapping[str, Any], name: str) -> int:
     """Read one token count from the Converse usage block.
 
     Cache fields are absent on models or regions without prompt caching, so
