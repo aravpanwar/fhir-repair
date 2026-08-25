@@ -191,7 +191,21 @@ class LLMStrategy:
             removed = True
             explanation = f"LLM ({completion.model}) removed the element at the error path."
         else:
-            set_at_path(resource, error.location, new_value)
+            try:
+                set_at_path(resource, error.location, new_value)
+            except ValueError as exc:
+                # Some errors are reported against the resource itself rather
+                # than a field (invariants, whole-resource constraints), so
+                # there is no path to assign to. That is a refusal, not a
+                # crash: raising here would abort a whole benchmark run.
+                return refused(
+                    error,
+                    self.name,
+                    self.version,
+                    self.permission,
+                    before,
+                    f"cannot write to error location {error.location!r}: {exc}",
+                )
             after = new_value
             removed = False
             explanation = f"LLM ({completion.model}) produced replacement value."
