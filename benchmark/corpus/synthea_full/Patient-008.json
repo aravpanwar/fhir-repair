@@ -1,0 +1,161 @@
+{
+  "resourceType": "Patient",
+  "id": "99249ff1-59a9-dc6e-c152-4ca393cd57c5",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+      "valueString": "Shanelle862 Feest103"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+      "valueAddress": {
+        "city": "Monson",
+        "state": "Massachusetts",
+        "country": "US"
+      }
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+      "valueDecimal": 0.0
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+      "valueDecimal": 23.0
+    }
+  ],
+  "identifier": [
+    {
+      "system": "https://github.com/synthetichealth/synthea",
+      "value": "99249ff1-59a9-dc6e-c152-4ca393cd57c5"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ],
+        "text": "Medical Record Number"
+      },
+      "system": "http://hospital.smarthealthit.org",
+      "value": "99249ff1-59a9-dc6e-c152-4ca393cd57c5"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "SS",
+            "display": "Social Security Number"
+          }
+        ],
+        "text": "Social Security Number"
+      },
+      "system": "http://hl7.org/fhir/sid/us-ssn",
+      "value": "999-22-2990"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "DL",
+            "display": "Driver's license number"
+          }
+        ],
+        "text": "Driver's license number"
+      },
+      "system": "urn:oid:2.16.840.1.113883.4.3.25",
+      "value": "S99938810"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PPN",
+            "display": "Passport Number"
+          }
+        ],
+        "text": "Passport Number"
+      },
+      "system": "http://hl7.org/fhir/sid/passport-USA",
+      "value": "X46050303X"
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "Zulauf375",
+      "given": [
+        "Azucena377",
+        "Juliana372"
+      ],
+      "prefix": [
+        "Ms."
+      ]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-344-5833",
+      "use": "home"
+    }
+  ],
+  "gender": "female",
+  "birthDate": "2002-08-31",
+  "address": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+          "extension": [
+            {
+              "url": "latitude",
+              "valueDecimal": 42.00580132738247
+            },
+            {
+              "url": "longitude",
+              "valueDecimal": -70.97449663976944
+            }
+          ]
+        }
+      ],
+      "line": [
+        "530 Watsica Trafficway Suite 89"
+      ],
+      "city": "Bridgewater",
+      "state": "Massachusetts",
+      "postalCode": "02324",
+      "country": "US"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "S",
+        "display": "Never Married"
+      }
+    ],
+    "text": "Never Married"
+  },
+  "multipleBirthBoolean": false,
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "en-US",
+            "display": "English (United States)"
+          }
+        ],
+        "text": "English (United States)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "resourceType": "MedicationRequest",
+  "id": "92f99938-0f10-a337-6f9d-12c9efe1a2a8",
+  "status": "stopped",
+  "intent": "order",
+  "medicationCodeableConcept": {
+    "coding": [
+      {
+        "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+        "code": "308136",
+        "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+    ],
+    "text": "amLODIPine 2.5 MG Oral Tablet"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/2be5b95f-b10f-ac9e-bd2b-323949fd6812"
+  },
+  "authoredOn": "2016-12-24T18:39:10+05:30",
+  "requester": {
+    "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|9999999698",
+    "display": "Dr. Bobbye345 Wuckert783"
+  },
+  "reasonReference": [
+    {
+      "reference": "Condition/4414bb21-6bae-1fa5-29fa-edc8e50d2a2b",
+      "display": "Essential hypertension (disorder)"
+    }
+  ],
+  "dosageInstruction": [
+    {
+      "sequence": 1,
+      "timing": {
+        "repeat": {
+          "frequency": 1,
+          "period": 1.0,
+          "periodUnit": "d"
+        }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+                "code": "ordered",
+                "display": "Ordered"
+              }
+            ]
+          },
+          "doseQuantity": {
+            "value": 1.0
+          }
+        }
+      ]
+    }
+  ]
+}

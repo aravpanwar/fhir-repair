@@ -1,0 +1,39 @@
+{
+  "resourceType": "Condition",
+  "id": "a53a10e3-030e-3574-e251-a4359d991495",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "resolved"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "431856006",
+        "display": "Chronic kidney disease stage 2 (disorder)"
+      }
+    ],
+    "text": "Chronic kidney disease stage 2 (disorder)"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/06a38e5f-0fb4-4d8e-d106-8086d6cc1bed"
+  },
+  "onsetDateTime": "2012-10-13T18:39:10+05:30",
+  "abatementDateTime": "2023-02-11T21:01:49+05:30",
+  "recordedDate": "2012-10-13T18:39:10+05:30"
+}

@@ -1,0 +1,39 @@
+{
+  "resourceType": "Condition",
+  "id": "b72dd26c-5d4c-e432-f324-8ce56ae1ef3e",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "resolved"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "314529007",
+        "display": "Medication review due (situation)"
+      }
+    ],
+    "text": "Medication review due (situation)"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/a6d1011f-f92a-ce90-aa9c-db9876c400e2"
+  },
+  "onsetDateTime": "2016-05-07T18:39:10+05:30",
+  "abatementDateTime": "2016-12-17T18:39:10+05:30",
+  "recordedDate": "2016-05-07T18:39:10+05:30"
+}

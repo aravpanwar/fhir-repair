@@ -1,0 +1,39 @@
+{
+  "resourceType": "Condition",
+  "id": "c3b23307-b0dc-093b-8616-dc6e4714b1ac",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "active"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "version": "http://snomed.info/sct/731000124108",
+        "code": "5251000175109",
+        "display": "Received certificate of high school equivalency (finding)"
+      }
+    ],
+    "text": "Received certificate of high school equivalency (finding)"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/37c97067-67ff-89f1-848a-20099a925959"
+  },
+  "onsetDateTime": "1976-09-25T19:35:06+05:30",
+  "recordedDate": "1976-09-25T19:35:06+05:30"
+}

@@ -1,0 +1,161 @@
+{
+  "resourceType": "Patient",
+  "id": "98b29475-c028-0a58-e08f-0cd93982a198",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+      "valueString": "Rufina863 Waelchi213"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+      "valueAddress": {
+        "city": "Acton",
+        "state": "Massachusetts",
+        "country": "US"
+      }
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+      "valueDecimal": 0.29705968352365714
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+      "valueDecimal": 31.702940316476344
+    }
+  ],
+  "identifier": [
+    {
+      "system": "https://github.com/synthetichealth/synthea",
+      "value": "98b29475-c028-0a58-e08f-0cd93982a198"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ],
+        "text": "Medical Record Number"
+      },
+      "system": "http://hospital.smarthealthit.org",
+      "value": "98b29475-c028-0a58-e08f-0cd93982a198"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "SS",
+            "display": "Social Security Number"
+          }
+        ],
+        "text": "Social Security Number"
+      },
+      "system": "http://hl7.org/fhir/sid/us-ssn",
+      "value": "999-48-9706"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "DL",
+            "display": "Driver's license number"
+          }
+        ],
+        "text": "Driver's license number"
+      },
+      "system": "urn:oid:2.16.840.1.113883.4.3.25",
+      "value": "S99911022"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PPN",
+            "display": "Passport Number"
+          }
+        ],
+        "text": "Passport Number"
+      },
+      "system": "http://hl7.org/fhir/sid/passport-USA",
+      "value": "X25104438X"
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "Bauch723",
+      "given": [
+        "Augustine565",
+        "Robt687"
+      ],
+      "prefix": [
+        "Mr."
+      ]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-186-5435",
+      "use": "home"
+    }
+  ],
+  "gender": "male",
+  "birthDate": "1993-05-06",
+  "address": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+          "extension": [
+            {
+              "url": "latitude",
+              "valueDecimal": 42.623352783310395
+            },
+            {
+              "url": "longitude",
+              "valueDecimal": -70.6870777423323
+            }
+          ]
+        }
+      ],
+      "line": [
+        "339 Durgan Course Apt 89"
+      ],
+      "city": "Gloucester",
+      "state": "Massachusetts",
+      "postalCode": "01930",
+      "country": "US"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "S",
+        "display": "Never Married"
+      }
+    ],
+    "text": "Never Married"
+  },
+  "multipleBirthBoolean": false,
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "en-US",
+            "display": "English (United States)"
+          }
+        ],
+        "text": "English (United States)"
+      }
+    }
+  ]
+}

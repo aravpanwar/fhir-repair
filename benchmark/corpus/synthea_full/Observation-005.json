@@ -1,0 +1,40 @@
+{
+  "resourceType": "Observation",
+  "id": "22bc0387-cf40-bf23-00a6-c0d870b1bfc3",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "laboratory",
+          "display": "Laboratory"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "2951-2",
+        "display": "Sodium [Moles/volume] in Serum or Plasma"
+      }
+    ],
+    "text": "Sodium [Moles/volume] in Serum or Plasma"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/902d4dd5-a053-b7eb-ee24-4480a7bae55b"
+  },
+  "effectiveDateTime": "2016-11-05T18:39:10+05:30",
+  "issued": "2016-11-05T18:39:10.591+05:30",
+  "valueQuantity": {
+    "value": 141.81,
+    "unit": "mmol/L",
+    "system": "http://unitsofmeasure.org",
+    "code": "mmol/L"
+  }
+}

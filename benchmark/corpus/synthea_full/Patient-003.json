@@ -1,0 +1,162 @@
+{
+  "resourceType": "Patient",
+  "id": "6872def5-772f-427c-3053-de6e1c71ce0a",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+      "valueString": "Marybelle759 Eichmann909"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+      "valueAddress": {
+        "city": "Lexington",
+        "state": "Massachusetts",
+        "country": "US"
+      }
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+      "valueDecimal": 27.08051529443246
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+      "valueDecimal": 20.91948470556754
+    }
+  ],
+  "identifier": [
+    {
+      "system": "https://github.com/synthetichealth/synthea",
+      "value": "6872def5-772f-427c-3053-de6e1c71ce0a"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ],
+        "text": "Medical Record Number"
+      },
+      "system": "http://hospital.smarthealthit.org",
+      "value": "6872def5-772f-427c-3053-de6e1c71ce0a"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "SS",
+            "display": "Social Security Number"
+          }
+        ],
+        "text": "Social Security Number"
+      },
+      "system": "http://hl7.org/fhir/sid/us-ssn",
+      "value": "999-96-6821"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "DL",
+            "display": "Driver's license number"
+          }
+        ],
+        "text": "Driver's license number"
+      },
+      "system": "urn:oid:2.16.840.1.113883.4.3.25",
+      "value": "S99937604"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PPN",
+            "display": "Passport Number"
+          }
+        ],
+        "text": "Passport Number"
+      },
+      "system": "http://hl7.org/fhir/sid/passport-USA",
+      "value": "X56587223X"
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "West559",
+      "given": [
+        "Alfred550",
+        "Andres25"
+      ],
+      "prefix": [
+        "Mr."
+      ]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-932-1130",
+      "use": "home"
+    }
+  ],
+  "gender": "male",
+  "birthDate": "1956-08-07",
+  "deceasedDateTime": "2005-03-15T20:43:24+05:30",
+  "address": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+          "extension": [
+            {
+              "url": "latitude",
+              "valueDecimal": 42.42000352463694
+            },
+            {
+              "url": "longitude",
+              "valueDecimal": -71.18158394036953
+            }
+          ]
+        }
+      ],
+      "line": [
+        "1037 Stehr Park"
+      ],
+      "city": "Belmont",
+      "state": "Massachusetts",
+      "postalCode": "02138",
+      "country": "US"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "M",
+        "display": "Married"
+      }
+    ],
+    "text": "Married"
+  },
+  "multipleBirthBoolean": false,
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "en-US",
+            "display": "English (United States)"
+          }
+        ],
+        "text": "English (United States)"
+      }
+    }
+  ]
+}

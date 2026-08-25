@@ -1,0 +1,172 @@
+{
+  "resourceType": "Patient",
+  "id": "28d7b56c-6056-d0a2-2991-39d6e917216c",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+      "valueString": "Dinorah501 Hammes673"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+      "valueAddress": {
+        "city": "Westfield",
+        "state": "Massachusetts",
+        "country": "US"
+      }
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+      "valueDecimal": 0.5613808517210661
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+      "valueDecimal": 78.43861914827893
+    }
+  ],
+  "identifier": [
+    {
+      "system": "https://github.com/synthetichealth/synthea",
+      "value": "28d7b56c-6056-d0a2-2991-39d6e917216c"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ],
+        "text": "Medical Record Number"
+      },
+      "system": "http://hospital.smarthealthit.org",
+      "value": "28d7b56c-6056-d0a2-2991-39d6e917216c"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "SS",
+            "display": "Social Security Number"
+          }
+        ],
+        "text": "Social Security Number"
+      },
+      "system": "http://hl7.org/fhir/sid/us-ssn",
+      "value": "999-31-6091"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "DL",
+            "display": "Driver's license number"
+          }
+        ],
+        "text": "Driver's license number"
+      },
+      "system": "urn:oid:2.16.840.1.113883.4.3.25",
+      "value": "S99932044"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PPN",
+            "display": "Passport Number"
+          }
+        ],
+        "text": "Passport Number"
+      },
+      "system": "http://hl7.org/fhir/sid/passport-USA",
+      "value": "X29809556X"
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "Beahan375",
+      "given": [
+        "Angela104",
+        "Bella510"
+      ],
+      "prefix": [
+        "Mrs."
+      ]
+    },
+    {
+      "use": "maiden",
+      "family": "Funk324",
+      "given": [
+        "Angela104",
+        "Bella510"
+      ],
+      "prefix": [
+        "Mrs."
+      ]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-387-7632",
+      "use": "home"
+    }
+  ],
+  "gender": "female",
+  "birthDate": "1946-06-25",
+  "address": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+          "extension": [
+            {
+              "url": "latitude",
+              "valueDecimal": 41.69360171519502
+            },
+            {
+              "url": "longitude",
+              "valueDecimal": -70.16953083062255
+            }
+          ]
+        }
+      ],
+      "line": [
+        "677 Bosco Extension"
+      ],
+      "city": "South Yarmouth",
+      "state": "Massachusetts",
+      "postalCode": "02664",
+      "country": "US"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "D",
+        "display": "Divorced"
+      }
+    ],
+    "text": "Divorced"
+  },
+  "multipleBirthBoolean": false,
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "en-US",
+            "display": "English (United States)"
+          }
+        ],
+        "text": "English (United States)"
+      }
+    }
+  ]
+}
