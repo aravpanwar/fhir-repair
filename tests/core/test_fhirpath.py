@@ -125,6 +125,55 @@ def test_delete_at_path_handles_choice_element_notation():
     assert "valueQuantity" not in resource
 
 
+def test_get_at_path_resolves_abstract_choice_element():
+    """HAPI emits `value[x]` alongside the ofType form for the same error."""
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": "69,64", "unit": "mg/dL"},
+    }
+    assert get_at_path(resource, "Observation.value[x].value") == "69,64"
+    assert get_at_path(resource, "Observation.value[x]") == {"value": "69,64", "unit": "mg/dL"}
+
+
+def test_set_at_path_resolves_abstract_choice_element():
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": "69,64", "unit": "mg/dL"},
+    }
+    set_at_path(resource, "Observation.value[x].value", 69.64)
+    assert resource["valueQuantity"]["value"] == 69.64
+
+
+def test_delete_at_path_resolves_abstract_choice_element():
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": 1}}
+    assert delete_at_path(resource, "Observation.value[x]") is True
+    assert "valueQuantity" not in resource
+
+
+def test_ambiguous_choice_element_is_not_guessed():
+    """Two choice members present: repairing the wrong one would be worse."""
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": 1},
+        "valueString": "x",
+    }
+    assert get_at_path(resource, "Observation.value[x]") is None
+    with pytest.raises(ValueError):
+        set_at_path(resource, "Observation.value[x]", 2)
+
+
+def test_absent_choice_element_returns_none():
+    resource = {"resourceType": "Observation", "status": "final"}
+    assert get_at_path(resource, "Observation.value[x]") is None
+    assert delete_at_path(resource, "Observation.value[x]") is False
+
+
+def test_choice_element_does_not_match_unrelated_prefix():
+    """`valueset` is not a `value[x]` member; the suffix must be capitalised."""
+    resource = {"resourceType": "Custom", "valueset": "no"}
+    assert get_at_path(resource, "Custom.value[x]") is None
+
+
 def test_delete_at_path_rejects_bare_resource_type():
     resource = {"resourceType": "Observation"}
     with pytest.raises(ValueError):
