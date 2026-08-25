@@ -1,14 +1,13 @@
 # Benchmark results
 
-Baseline results on Corpus A. Raw per-case output for this run is committed at
-[benchmark/published/corpus-a-deterministic.json](benchmark/published/corpus-a-deterministic.json),
-with the run history in
-[benchmark/published/leaderboard.json](benchmark/published/leaderboard.json).
+Published runs on Corpus A. Raw per-case output and the cumulative
+leaderboard are committed under
+[benchmark/published/](benchmark/published/).
 
 Those are snapshots kept under version control on purpose. A local
 `benchmark.run` writes to `benchmark/results.json`, which is gitignored as
-regenerable output, so re-running the benchmark never silently overwrites the
-published numbers.
+regenerable output, so re-running never silently overwrites published
+numbers.
 
 ## Run provenance
 
@@ -16,81 +15,121 @@ published numbers.
 |---|---|
 | Corpus | [benchmark/corpus/synthea_full/](benchmark/corpus/synthea_full/), 100 Synthea v3.3.0 resources, seed 12345 |
 | Cases | 326 mutated resources across all 8 mutation classes |
-| Config | [examples/repair-config.yaml](examples/repair-config.yaml), deterministic strategies only |
 | Validator | HAPI FHIR 7.4.0 |
 | FHIR version | 4.0.1 |
 | Dispatch version | 1.0.0 |
-| LLM | none; no API key needed to reproduce this run |
+| Guard | defaults, plus `allow_change_existing_clinical_value` for the LLM runs (the invariant strategy removes data) |
 
-The guard ran at its default permissions: `allow_reformat` and
-`allow_bind_required_valueset` on, the three higher-risk permissions off.
+## Headline
 
-## Deterministic-only baseline
+| Run | Validator pass | Ground truth | Mean latency |
+|---|---:|---:|---:|
+| Deterministic only | 71.2% | 46.9% | 267 ms |
+| + DeepSeek V4 Flash | **87.4%** | **62.6%** | 6.6 s |
+| + DeepSeek V4 Pro | **87.4%** | **62.9%** | 10.2 s |
 
-| Metric | Result |
-|---|---|
-| Validator pass rate | **71.2%** (232/326) |
-| Ground-truth match rate | **46.9%** (153/326) |
-| Mean duration | 267 ms per resource |
+Restricted to the 243 cases the validator actually flagged:
 
-Two metrics because they answer different questions. Validator pass means
-HAPI accepts the repaired resource. Ground-truth match means the repair
-reproduced the original pre-mutation value exactly. Passing the validator
-without matching ground truth is not necessarily a bad repair, but it is not
-a verified one either, so both are reported.
+| Run | Validator pass | Ground truth |
+|---|---:|---:|
+| DeepSeek V4 Flash | 83.1% | 82.3% |
+| DeepSeek V4 Pro | 83.1% | 82.7% |
 
-### Per mutation class
+The two columns converging on the detected subset is the honest signal: on
+cases that posed a real repair problem, a resource that passes the validator
+is almost always the original resource restored, not a different resource
+that happens to validate.
 
-| Mutation class | n | Validator pass | Ground truth | Notes |
-|---|---:|---:|---:|---|
-| `date_format` | 20 | 1.00 | 1.00 | |
-| `decimal_format` | 13 | 1.00 | 1.00 | |
-| `identifier_system` | 20 | 1.00 | 1.00 | |
-| `singleton_wrap` | 100 | 1.00 | 1.00 | |
-| `telecom_format` | 20 | 1.00 | 0.00 | see below |
-| `missing_required` | 100 | 0.59 | 0.00 | refuses by design |
-| `invalid_code_binding` | 40 | 0.00 | 0.00 | needs an LLM strategy |
-| `invariant_violation` | 13 | 0.00 | 0.00 | needs an LLM strategy |
+## Per mutation class
 
-## Reading the zeros
+Validator pass / ground truth.
 
-None of the three zero rows is a deterministic strategy failing at something
-it claims to handle.
+| Mutation class | n | Deterministic | Flash | Pro |
+|---|---:|---:|---:|---:|
+| `date_format` | 20 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+| `decimal_format` | 13 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 0.92 |
+| `identifier_system` | 20 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+| `singleton_wrap` | 100 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+| `invalid_code_binding` | 40 | 0.00 / 0.00 | 1.00 / 0.95 | 1.00 / 1.00 |
+| `invariant_violation` | 13 | 0.00 / 0.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+| `missing_required` | 100 | 0.59 / 0.00 | 0.59 / 0.00 | 0.59 / 0.00 |
+| `telecom_format` | 20 | 1.00 / 0.00 | 1.00 / 0.00 | 1.00 / 0.00 |
 
-**`invalid_code_binding` and `invariant_violation` are not mapped in this
-config.** Both are interpretive and route to LLM strategies
-(`llm.suggest_terminology_match`, `llm.resolve_invariant`) that this run does
-not enable. Every deterministic strategy in the chain refuses cleanly and the
-error is reported unresolved, which is the intended fail-closed behaviour. A
-run with an LLM provider configured is the comparison these rows exist for,
-and is not yet published.
+## What the LLM adds
 
-**`missing_required` refuses by design.** Inventing a value for a field that
-was deleted requires `allow_add_missing_required_field`, which is off by
-default because there is no signal in the input to recover the value from.
-The 59% validator pass rate is the subset where the deleted field was not
-actually required by base R4, so removing it left a valid resource; ground
-truth is 0% because the original value is unrecoverable, not because a repair
-went wrong.
+Two classes are interpretive and no deterministic strategy can touch them.
+Both go from nothing to essentially solved:
 
-**`telecom_format` passes the validator without repairing anything.** HAPI
-7.4.0 reports no error for a `tel:` scheme prefix on `ContactPoint.value`, so
-no error is dispatched and no strategy runs. The 1.00 validator column is the
-mutated resource being accepted as-is, and the 0.00 ground-truth column is
-honest about the value still carrying the prefix. This is a limitation of the
-mutation, not of the repair: it produces a resource that is unusual but valid,
-so it does not exercise anything. Worth either replacing with a corruption
-HAPI rejects, or scoring against a profile that constrains the field.
+- **`invalid_code_binding`** (40 cases). An out-of-ValueSet abbreviation
+  (`"F"` for `Observation.status`, `"M"` for `Patient.gender`) has no
+  mechanical fix, but it is unambiguous to a reader.
+  `llm.suggest_terminology_match` recovers the bound code.
+- **`invariant_violation`** (13 cases). obs-6 forbids `dataAbsentReason`
+  alongside a value. `llm.resolve_invariant` drops the redundant element and
+  keeps the measurement, at 100% on both metrics.
+
+## Flash or Pro
+
+Flash. Pro costs 3x per token, took 55% longer per case (10.2 s against
+6.6 s), and scored 0.3 points higher on ground truth, which is inside the
+run-to-run noise described below. There is no measured reason to pay for Pro
+on this workload.
+
+Both runs used DeepSeek's default thinking mode (`high` effort), which bills
+reasoning as output tokens. A full 326-case run cost a few cents.
+
+## Non-determinism
+
+Repair is not reproducible case-for-case even at `temperature: 0.0`. Flash
+missed 2 of 40 `invalid_code_binding` cases; re-running one of them
+immediately afterwards matched ground truth. Every case in that class took
+the same number of actions, so this is variance in the model's output rather
+than a different code path.
+
+Read single-case differences between the two model runs as noise. The class
+level is where the comparison means something.
+
+## Reading the flat rows
+
+Neither `missing_required` nor `telecom_format` is a strategy failing at
+something it claims to do.
+
+**`missing_required` refuses by design.** Inventing a value for a deleted
+field needs `allow_add_missing_required_field`, off by default because
+nothing in the input recovers the value. The 59% validator pass is the subset
+where the deleted field was not required by base R4, so removing it left a
+valid resource. Ground truth is 0% because the original value is
+unrecoverable, not because a repair went wrong. An LLM does not change this
+and should not: the guard is the point.
+
+**`telecom_format` is not detected at all.** `ContactPoint.value` is a plain
+FHIR string with no regex constraint, so `tel:555-0100` is structurally valid
+and HAPI 7.4.0 reports no error. No error means no dispatch, so no strategy
+runs, and the 1.00 validator column is the mutated resource being accepted
+untouched.
+
+Runs therefore record `validator_detected` per case, and the summary reports
+`undetected_by_validator` plus a detected-only rate, so a class that
+dispatches nothing cannot read as a perfect score. 83 of the 326 cases are
+undetected: all 20 telecom, 59 of the `missing_required` deletions that base
+R4 permits, and 4 `date_format` cases where the unpadded date still parsed.
+
+The `deterministic.normalize_telecom` strategy itself is unaffected and
+still useful. Legacy feeds really do emit `tel:`-prefixed numbers, and
+stripping the prefix is a correct repair. It is a canonicalization rather
+than a validation fix, so it fires when something does flag the field: a
+profile constraining `ContactPoint.value`, or a stricter validator. What
+changed here is the measurement, not the capability.
 
 ## Reproducing
-
-With Docker and Python installed:
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d hapi
 # wait for http://localhost:8080/fhir/metadata to return 200
 
 python -m benchmark.mutate benchmark/corpus/synthea_full benchmark/corpus/synthea_mutated
+
+# deterministic only, no key needed
 python -m benchmark.run \
   --corpus benchmark/corpus/synthea_mutated \
   --manifest benchmark/corpus/synthea_mutated/manifest.json \
@@ -99,28 +138,44 @@ python -m benchmark.run \
   --hapi-url http://localhost:8080/fhir
 ```
 
-Regenerating the corpus itself needs Java 11+ and Synthea v3.3.0; see
-[benchmark/corpus/SYNTHEA-GENERATION.md](benchmark/corpus/SYNTHEA-GENERATION.md).
-The committed corpus makes that optional.
+For an LLM run, route the interpretive classes to LLM strategies (append
+`llm.suggest_terminology_match` and `llm.resolve_invariant` to the
+`processing` chain, and enable
+`allow_change_existing_clinical_value`), then:
 
-## What this run established
+```bash
+export LLM_PROVIDER=deepseek
+export LLM_MODEL=deepseek-v4-flash
+export LLM_API_KEY=...           # BYOK; never committed
+```
 
-Four bugs surfaced only under a real corpus and are fixed in the numbers
-above. Each was invisible against the 6-resource starter corpus:
+A full LLM run takes roughly 35 minutes for Flash and 55 for Pro against a
+local HAPI.
 
-1. **`identifier_system` produced no mutations at all.** The mutation only
-   inspected `identifier[0]`; real Synthea patients carry the canonical
-   `us-ssn` system at `identifier[2]`, behind Synthea's own generator id. The
-   class silently contributed 0 cases.
-2. **The identifier strategy refused every case.** HAPI reports the
-   absolute-reference error on the `Identifier` element, not on
-   `Identifier.system`, so the strategy received a dict and refused. 0% to
-   100%.
-3. **`value[x]` choice paths resolved to nothing.** HAPI emits
-   `Observation.value[x].value` alongside the `ofType` form; only the latter
-   was handled, so decimal fixes never applied. This also lifted
-   `singleton_wrap` from 0.77 to 1.00.
-4. **Decimals were written back as strings.** `"69,64"` became `"69.64"`, and
-   HAPI still rejected it: FHIR `decimal` is a JSON number. 0% to 100%.
+## Bugs these runs found
 
-Overall the run moved from 54.0% / 29.8% to 71.2% / 46.9%.
+The deterministic run surfaced four bugs that the 6-resource starter corpus
+could not, all fixed before these numbers:
+
+1. `identifier_system` produced no mutations at all: it inspected
+   `identifier[0]`, and real Synthea patients carry the canonical `us-ssn`
+   system at `identifier[2]`.
+2. The identifier strategy refused every case, because HAPI reports the
+   error on the `Identifier` element rather than `Identifier.system`.
+3. `Observation.value[x].value` resolved to nothing, so decimal fixes never
+   applied. Fixing it also lifted `singleton_wrap` from 0.77 to 1.00.
+4. Decimals were written back as strings, which FHIR rejects: `decimal` is a
+   JSON number.
+
+The LLM run surfaced three more:
+
+5. An `invariant-failed` dispatch key never matched anything. HAPI reports
+   invariant failures as `processing`, so the entry documented in the
+   dispatch table was dead.
+6. The invariant strategy asked whether to remove the flagged element, but
+   HAPI flags the resource, so it was effectively asking whether to delete
+   the whole Observation. The model declined every time, correctly. It now
+   names the element, checked against the resource and a protected list.
+7. An error location that is a bare resource type crashed the generic LLM
+   runner through `set_at_path`, aborting a whole benchmark run partway
+   through. It refuses now.

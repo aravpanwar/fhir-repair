@@ -161,8 +161,8 @@ This is a v0.1 pre-release. Current capabilities:
 - 3 LLM strategies (opt-in via dispatch table):
   `llm.suggest_terminology_match`, `llm.resolve_invariant`, generic `llm`
 - HAPI REST validator adapter (pinned to HAPI 7.4.0)
-- LLM provider adapters: Anthropic, OpenAI, AWS Bedrock, and on-prem (any
-  OpenAI-compatible server, such as vLLM or Ollama)
+- LLM provider adapters: Anthropic, OpenAI, DeepSeek, AWS Bedrock, and
+  on-prem (any OpenAI-compatible server, such as vLLM or Ollama)
 - JSON Lines audit log with sealed v1 schema
 - CLI and Python library
 - Optional self-hosted HTTP service (FastAPI)
@@ -170,14 +170,16 @@ This is a v0.1 pre-release. Current capabilities:
   100-resource Synthea corpus, both committed
 - Benchmark mutation harness with all 8 study-design mutation classes
 - Leaderboard renderer with cumulative runs and per-mutation breakdown
-- Published benchmark baseline on the full corpus: see [RESULTS.md](RESULTS.md)
+- Published benchmark runs on the full corpus, deterministic-only and with
+  an LLM (87.4% validator pass, 62.6% ground truth): see
+  [RESULTS.md](RESULTS.md)
 
 Deferred to later releases:
 
 - Additional LLM providers (Azure OpenAI, Vertex AI)
 - Wild-sample empirical study corpus
-- Public model-vs-prompt benchmark leaderboard (an LLM-enabled benchmark run;
-  the published baseline is deterministic strategies only)
+- A prompt-variant sweep on the leaderboard (model comparison is published;
+  prompt versions have not been varied yet)
 
 ## Deployment and compliance
 
