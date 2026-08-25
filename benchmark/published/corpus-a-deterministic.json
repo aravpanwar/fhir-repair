@@ -1,0 +1,3328 @@
+{
+  "summary": {
+    "total": 326,
+    "validator_pass_rate": 0.7116564417177914,
+    "ground_truth_match_rate": 0.46932515337423314,
+    "mean_duration_ms": 267,
+    "total_duration_ms": 87587,
+    "by_mutation": {
+      "date_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "decimal_format": {
+        "total": 13,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "identifier_system": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "invalid_code_binding": {
+        "total": 40,
+        "validator_pass_rate": 0.0,
+        "ground_truth_match_rate": 0.0
+      },
+      "invariant_violation": {
+        "total": 13,
+        "validator_pass_rate": 0.0,
+        "ground_truth_match_rate": 0.0
+      },
+      "missing_required": {
+        "total": 100,
+        "validator_pass_rate": 0.59,
+        "ground_truth_match_rate": 0.0
+      },
+      "singleton_wrap": {
+        "total": 100,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "telecom_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 0.0
+      }
+    }
+  },
+  "results": [
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 194
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 53
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 230
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 53
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 230
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 60
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 223
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-abatementDateTime",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 55
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 212
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 56
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 219
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 56
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 227
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 57
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 213
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 54
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 218
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 56
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 226
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 55
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 215
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 54
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 221
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 57
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 222
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-abatementDateTime",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 56
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 220
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 58
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 225
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-abatementDateTime",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 56
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 217
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 57
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 221
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 60
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.abatementDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 217
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-onsetDateTime",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 57
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 220
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 59
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Condition.onsetDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 219
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-recordedDate",
+      "location": "Condition.recordedDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 59
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 327
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 372
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 349
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 368
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 349
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 373
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 358
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 410
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 371
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 395
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 356
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 365
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 387
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 405
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 412
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 380
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 380
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 408
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 390
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 417
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 412
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 400
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 384
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 404
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 366
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 390
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 368
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 396
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 373
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 400
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 351
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 396
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 441
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 367
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 385
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 398
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 383
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 419
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Encounter.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 353
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Encounter.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 385
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.intent",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 403
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 71
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 380
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 391
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 237
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-intent",
+      "location": "MedicationRequest.intent",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 395
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.intent",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 384
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 61
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.intent",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 367
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 60
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 361
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-intent",
+      "location": "MedicationRequest.intent",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 378
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 235
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 64
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 378
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 65
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 384
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 380
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.intent",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 377
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 381
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.intent",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 382
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 393
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 387
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 391
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 377
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-intent",
+      "location": "MedicationRequest.intent",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 383
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 330
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 64
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 367
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 61
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 243
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 393
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 363
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "MedicationRequest.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 414
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 236
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-intent",
+      "location": "MedicationRequest.intent",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 392
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 364
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-authoredOn",
+      "location": "MedicationRequest.authoredOn",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 67
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "MedicationRequest.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 390
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-intent",
+      "location": "MedicationRequest.intent",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 402
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 237
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-effectiveDateTime",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 60
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 383
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 410
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 379
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 362
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-effectiveDateTime",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 60
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 320
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 390
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 380
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 233
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 377
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 354
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 373
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 384
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 348
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 374
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 355
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 369
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 386
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 358
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-effectiveDateTime",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 57
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 346
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 371
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 336
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 232
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 363
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 345
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 385
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 400
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 232
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 367
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 366
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 373
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 374
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 352
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-issued",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 59
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 343
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 369
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 379
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 233
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-issued",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 23
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 378
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 382
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 375
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 346
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-effectiveDateTime",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 59
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 369
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 233
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-issued",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 67
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 367
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 223
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-effectiveDateTime",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 55
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 385
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.status",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 348
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 363
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 371
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 236
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-effectiveDateTime",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 66
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 361
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 393
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 354
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 220
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 372
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 383
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 226
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-issued",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 62
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 358
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 369
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 383
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 229
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 363
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 378
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 230
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 385
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 345
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 376
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 370
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 225
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 339
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 369
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Observation.effectiveDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 226
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-issued",
+      "location": "Observation.issued",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 62
+    },
+    {
+      "mutation": "decimal_format",
+      "description": "decimal-locale-comma",
+      "location": "Observation.valueQuantity.value",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 2,
+      "actions_refused": 1,
+      "duration_ms": 352
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-status",
+      "location": "Observation.status",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 373
+    },
+    {
+      "mutation": "invariant_violation",
+      "description": "invariant-obs7-value-and-absent",
+      "location": "Observation.dataAbsentReason",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 2,
+      "actions_refused": 2,
+      "duration_ms": 379
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 278
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 237
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-gender",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 48
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 438
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 89
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 232
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 224
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 238
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 49
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 439
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 89
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 235
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 240
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 261
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-deceasedDateTime",
+      "location": "Patient.deceasedDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 50
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 444
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 97
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 196
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 251
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 300
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-gender",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 81
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 470
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 78
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 294
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 273
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 252
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 44
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 440
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 113
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 364
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 250
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 269
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 62
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 404
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 92
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 321
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 276
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 332
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 66
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 487
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 87
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 269
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 283
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 295
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-gender",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 60
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 422
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 112
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 350
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 92
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 270
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 59
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 433
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 96
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 260
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 235
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 269
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-gender",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 52
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 449
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 77
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 235
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 222
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 268
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 44
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 447
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 65
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 246
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 46
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 253
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 89
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 448
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 230
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 335
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 492
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 392
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-birthDate",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 70
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 450
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 59
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 320
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 213
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.deceasedDateTime",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 244
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 48
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 441
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 88
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 220
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 237
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 226
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-birthDate",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 55
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 435
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 95
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 252
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 257
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 271
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-multipleBirthBoolean",
+      "location": "Patient.multipleBirthBoolean",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 50
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 461
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 92
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 237
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 258
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 263
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-birthDate",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 61
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 449
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 92
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 250
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 240
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 266
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-birthDate",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 58
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 414
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 88
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 218
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 275
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 348
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-gender",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 91
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 555
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 101
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 266
+    },
+    {
+      "mutation": "date_format",
+      "description": "date-format-unpadded",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 124
+    },
+    {
+      "mutation": "singleton_wrap",
+      "description": "singleton-wrapped-array",
+      "location": "Patient.gender",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 349
+    },
+    {
+      "mutation": "missing_required",
+      "description": "missing-birthDate",
+      "location": "Patient.birthDate",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 82
+    },
+    {
+      "mutation": "invalid_code_binding",
+      "description": "invalid-code-gender",
+      "location": "Patient.gender",
+      "passed_validator": false,
+      "matches_ground_truth": false,
+      "actions_taken": 4,
+      "actions_refused": 4,
+      "duration_ms": 468
+    },
+    {
+      "mutation": "telecom_format",
+      "description": "telecom-scheme-prefix-phone",
+      "location": "Patient.telecom[0].value",
+      "passed_validator": true,
+      "matches_ground_truth": false,
+      "actions_taken": 0,
+      "actions_refused": 0,
+      "duration_ms": 89
+    },
+    {
+      "mutation": "identifier_system",
+      "description": "identifier-system-label",
+      "location": "Patient.identifier[2].system",
+      "passed_validator": true,
+      "matches_ground_truth": true,
+      "actions_taken": 1,
+      "actions_refused": 0,
+      "duration_ms": 229
+    }
+  ],
+  "metadata": {
+    "fhir_version": "4.0.1",
+    "hapi_version": "7.4.0",
+    "dispatch_version": "1.0.0",
+    "llm_provider": null,
+    "llm_model": null,
+    "prompt_version": "v1",
+    "guard": {
+      "allow_reformat": true,
+      "allow_bind_required_valueset": true,
+      "allow_bind_extensible_valueset": false,
+      "allow_add_missing_required_field": false,
+      "allow_change_existing_clinical_value": false
+    }
+  }
+}
