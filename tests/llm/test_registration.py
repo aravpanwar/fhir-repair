@@ -110,6 +110,7 @@ def test_register_default_llm_strategies_adds_expected_names():
     names = registry.names()
     assert "llm" in names
     assert "llm.suggest_terminology_match" in names
+    assert "llm.resolve_invariant" in names
 
 
 def test_register_default_llm_strategies_metadata():
