@@ -27,7 +27,7 @@ from typing import Any
 from jinja2 import Template
 
 from fhir_repair.core.audit import hash_prompt
-from fhir_repair.core.fhirpath import get_at_path, set_at_path
+from fhir_repair.core.fhirpath import delete_at_path, get_at_path, set_at_path
 from fhir_repair.core.models import (
     PromptSegment,
     RepairAction,
@@ -39,9 +39,27 @@ from fhir_repair.strategies.llm.rag import SpecRetriever
 
 logger = logging.getLogger(__name__)
 
+
+class _Delete:
+    """Sentinel meaning "remove the element at the error path".
+
+    A distinct object rather than None because None already means "the model
+    declined to answer" and is handled as a refusal. Some fixes really are a
+    removal: an invariant forbidding two fields from coexisting is satisfied
+    by dropping one, and writing null in its place leaves the resource
+    invalid.
+    """
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return "DELETE"
+
+
+DELETE = _Delete()
+
 # Type for a parser that takes the LLM's raw text and returns the new value
 # at the error location. May raise to signal "could not parse" or
-# "untrustworthy output"; the runner converts that into a refusal.
+# "untrustworthy output"; the runner converts that into a refusal. May also
+# return the DELETE sentinel to request removal instead of replacement.
 ResponseParser = Callable[[str], Any]
 
 
@@ -159,7 +177,24 @@ class LLMStrategy:
                 "LLM returned null, signalling it could not determine the value",
             )
 
-        set_at_path(resource, error.location, new_value)
+        if new_value is DELETE:
+            if not delete_at_path(resource, error.location):
+                return refused(
+                    error,
+                    self.name,
+                    self.version,
+                    self.permission,
+                    before,
+                    "LLM asked to remove an element that is not present",
+                )
+            after: Any = None
+            removed = True
+            explanation = f"LLM ({completion.model}) removed the element at the error path."
+        else:
+            set_at_path(resource, error.location, new_value)
+            after = new_value
+            removed = False
+            explanation = f"LLM ({completion.model}) produced replacement value."
 
         action = RepairAction(
             error=error,
@@ -168,8 +203,9 @@ class LLMStrategy:
             risk=self.risk,  # type: ignore[arg-type]
             permission_used=self.permission,
             before=before,
-            after=new_value,
-            explanation=f"LLM ({completion.model}) produced replacement value.",
+            after=after,
+            removed=removed,
+            explanation=explanation,
             llm={
                 "provider": completion.provider,
                 "model": completion.model,
@@ -261,20 +297,29 @@ def register_default_llm_strategies(
     backoff_base_s: float = 1.0,
     backoff_max_s: float = 30.0,
 ) -> None:
-    """Register the v0.1 LLM strategies on `registry`.
+    """Register the built-in LLM strategies on `registry`.
 
-    Currently registers two:
+    Currently registers three:
 
       - `llm.suggest_terminology_match`: pick a code from a bound ValueSet
         when the user-provided value is interpretable (e.g., "M" maps to
         "male" under AdministrativeGender).
+      - `llm.resolve_invariant`: drop an element that violates a
+        cross-element invariant. Removal only; it cannot write a value.
       - `llm`: generic catch-all using a less specific prompt template.
         Use sparingly and pair with conservative hallucination_guard
         permissions.
 
-    Both require `allow_bind_required_valueset` by default. Adjust the
-    config's permissions to enable or disable.
+    The terminology and generic strategies require
+    `allow_bind_required_valueset`; the invariant strategy requires
+    `allow_change_existing_clinical_value`, which is denied by default.
+    Adjust the config's permissions to enable or disable.
     """
+    # Imported here rather than at module scope: invariant.py imports the
+    # DELETE sentinel from this module, so a top-level import would be
+    # circular.
+    from fhir_repair.strategies.llm import invariant as invariant_mod
+
     registry.register(
         LLMStrategy(
             name="llm.suggest_terminology_match",
@@ -285,6 +330,23 @@ def register_default_llm_strategies(
             prompt_version=prompt_version,
             provider=provider,
             retriever=retriever,
+            max_retries=max_retries,
+            backoff_base_s=backoff_base_s,
+            backoff_max_s=backoff_max_s,
+        )
+    )
+    registry.register(
+        LLMStrategy(
+            name=invariant_mod.NAME,
+            version=invariant_mod.VERSION,
+            permission=invariant_mod.PERMISSION,
+            risk=invariant_mod.RISK,
+            prompt_path=_PROMPTS_DIR / "repair_invariant.v1.jinja",
+            prompt_version=prompt_version,
+            provider=provider,
+            retriever=retriever,
+            parser=invariant_mod.parse_invariant_response,
+            system_prompt=invariant_mod.SYSTEM_PROMPT,
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
