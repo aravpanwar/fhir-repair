@@ -140,3 +140,22 @@ def test_every_registered_mutation_is_callable():
     # Guards against a registry entry that points at a missing function.
     for name, fn in mutate.MUTATIONS.items():
         assert callable(fn), name
+
+
+def test_mutate_corpus_skips_non_resource_json(tmp_path):
+    # Corpus directories collect manifests and notes. A JSON array used to
+    # crash the run partway through instead of being skipped.
+    import json
+
+    valid = tmp_path / "valid"
+    valid.mkdir()
+    (valid / "notes.json").write_text(json.dumps([{"file": "x"}]), encoding="utf-8")
+    (valid / "Patient-001.json").write_text(
+        json.dumps({"resourceType": "Patient", "gender": "male", "birthDate": "1980-04-11"}),
+        encoding="utf-8",
+    )
+
+    manifests = mutate.mutate_corpus(valid, tmp_path / "mutated")
+
+    assert manifests
+    assert all("Patient-001" in m["valid_path"] for m in manifests)
