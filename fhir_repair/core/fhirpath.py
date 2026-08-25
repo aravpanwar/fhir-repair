@@ -1,6 +1,6 @@
 """FHIRPath helper.
 
-Two operations are exposed:
+Three operations are exposed:
 
   - `evaluate(resource, path)`: full FHIRPath evaluation via `fhirpathpy`.
     Returns a flat collection per FHIRPath semantics. Used by RAG and any
@@ -8,6 +8,10 @@ Two operations are exposed:
   - `get_at_path(resource, path)` and `set_at_path(resource, path, value)`:
     direct dict walks symmetric with each other, used by repair strategies
     that need to inspect or assign the *raw* value at a path.
+  - `delete_at_path(resource, path)`: remove the element at a path. Needed
+    because some fixes are a removal, not a replacement: an invariant that
+    forbids two fields coexisting is satisfied by dropping one of them, and
+    writing a null in its place would leave the resource just as invalid.
 
 Why two surfaces: FHIRPath is a query language and flattens collections.
 That is correct for spec-lookup queries but wrong for cardinality fixes,
@@ -103,6 +107,48 @@ def set_at_path(resource: dict[str, Any], path: str, value: Any) -> None:
         cursor = _descend(cursor, part)
 
     _assign(cursor, parts[-1], value)
+
+
+def delete_at_path(resource: dict[str, Any], path: str) -> bool:
+    """Remove the element at `path` on `resource`, mutating in place.
+
+    Returns True if something was removed, False if the path was already
+    absent. Deleting an indexed segment removes that list entry and shifts
+    the rest down, which is the FHIR-correct result: a list with a hole in
+    it is not representable in JSON.
+
+    Raises ValueError on path syntax we do not handle, matching
+    `set_at_path`.
+    """
+    parts = _parse_simple_path(path)
+
+    if parts and isinstance(parts[0], str) and parts[0] == resource.get("resourceType"):
+        parts = parts[1:]
+
+    if not parts:
+        raise ValueError(f"Path {path!r} did not contain any addressable segments")
+
+    cursor: Any = resource
+    for part in parts[:-1]:
+        try:
+            cursor = _descend(cursor, part)
+        except (KeyError, IndexError, TypeError):
+            return False
+
+    return _remove(cursor, parts[-1])
+
+
+def _remove(cursor: Any, part: str | tuple[str, int]) -> bool:
+    """Delete a single segment from its parent container."""
+    try:
+        if isinstance(part, tuple):
+            name, index = part
+            del cursor[name][index]
+        else:
+            del cursor[part]
+    except (KeyError, IndexError, TypeError):
+        return False
+    return True
 
 
 def _parse_simple_path(path: str) -> list[str | tuple[str, int]]:
