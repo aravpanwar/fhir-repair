@@ -64,13 +64,16 @@ strategies:
 #
 # Provider notes:
 #   anthropic, openai  api_key required
+#   deepseek           api_key required. Endpoint defaults to
+#                      https://api.deepseek.com/v1; models are
+#                      deepseek-v4-flash and deepseek-v4-pro.
 #   bedrock            no api_key; uses the AWS credential chain, and needs
 #                      AWS_REGION set. Model ids are Bedrock-specific, e.g.
 #                      anthropic.claude-sonnet-4-5-20250929-v1:0
 #   on-prem            any OpenAI-compatible server (vLLM, Ollama, TGI).
 #                      endpoint is required, api_key optional.
 llm:
-  provider: ${LLM_PROVIDER}        # anthropic | openai | bedrock | on-prem
+  provider: ${LLM_PROVIDER}        # anthropic | openai | deepseek | bedrock | on-prem
   model: ${LLM_MODEL}              # provider-specific model identifier
   temperature: 0.0
   prompt_version: v1
