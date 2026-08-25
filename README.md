@@ -154,8 +154,8 @@ This is a v0.1 pre-release. Current capabilities:
 - 6 deterministic strategies: `normalize_date`, `normalize_decimal`,
   `unwrap_singleton`, `normalize_telecom`, `normalize_codeable_concept`,
   `canonicalize_identifier_system`
-- 2 LLM strategies (opt-in via dispatch table):
-  `llm.suggest_terminology_match`, generic `llm`
+- 3 LLM strategies (opt-in via dispatch table):
+  `llm.suggest_terminology_match`, `llm.resolve_invariant`, generic `llm`
 - HAPI REST validator adapter (pinned to HAPI 7.4.0)
 - Anthropic and OpenAI LLM provider adapters
 - JSON Lines audit log with sealed v1 schema
@@ -167,7 +167,6 @@ This is a v0.1 pre-release. Current capabilities:
 
 Deferred to later releases:
 
-- Additional deterministic strategies (invariant)
 - Additional LLM providers (Bedrock, on-prem)
 - Full Synthea-generated benchmark corpus and wild-sample empirical study corpus
 - Public model-vs-prompt benchmark leaderboard
