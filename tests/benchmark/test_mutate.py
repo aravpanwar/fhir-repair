@@ -123,6 +123,28 @@ def test_identifier_system_replaces_canonical_with_label():
     assert result.original_value == "http://hl7.org/fhir/sid/us-ssn"
 
 
+def test_identifier_system_finds_canonical_behind_other_identifiers():
+    # Real Synthea patients put the generator id first and the canonical
+    # us-ssn system third, so only checking identifier[0] found nothing.
+    resource = {
+        "resourceType": "Patient",
+        "identifier": [
+            {"system": "https://github.com/synthetichealth/synthea", "value": "abc"},
+            {"system": "http://hospital.smarthealthit.org", "value": "def"},
+            {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "999-99-9999"},
+        ],
+    }
+    result = mutate.mutate_identifier_system(resource, _RNG)
+    assert result is not None
+    assert result.resource["identifier"][2]["system"] == "SSN"
+    assert result.location == "Patient.identifier[2].system"
+    assert result.original_value == "http://hl7.org/fhir/sid/us-ssn"
+    # Earlier identifiers are untouched.
+    assert result.resource["identifier"][0]["system"] == (
+        "https://github.com/synthetichealth/synthea"
+    )
+
+
 def test_identifier_system_skips_unknown_system():
     resource = {
         "resourceType": "Patient",
