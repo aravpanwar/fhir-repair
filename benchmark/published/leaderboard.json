@@ -1,0 +1,55 @@
+[
+  {
+    "label": "deterministic only, corpus A (100 Synthea resources)",
+    "model": null,
+    "prompt_version": "v1",
+    "dispatch_version": "1.0.0",
+    "total": 326,
+    "validator_pass_rate": 0.7116564417177914,
+    "ground_truth_match_rate": 0.46932515337423314,
+    "mean_duration_ms": 267,
+    "by_mutation": {
+      "date_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "decimal_format": {
+        "total": 13,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "identifier_system": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "invalid_code_binding": {
+        "total": 40,
+        "validator_pass_rate": 0.0,
+        "ground_truth_match_rate": 0.0
+      },
+      "invariant_violation": {
+        "total": 13,
+        "validator_pass_rate": 0.0,
+        "ground_truth_match_rate": 0.0
+      },
+      "missing_required": {
+        "total": 100,
+        "validator_pass_rate": 0.59,
+        "ground_truth_match_rate": 0.0
+      },
+      "singleton_wrap": {
+        "total": 100,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "telecom_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 0.0
+      }
+    },
+    "recorded_at": "2026-08-25T10:12:22Z"
+  }
+]

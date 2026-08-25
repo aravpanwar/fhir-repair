@@ -1,0 +1,170 @@
+{
+  "resourceType": "Patient",
+  "id": "f1aaddce-75c7-b0cc-a3e3-40d90c830c9c",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+      "valueString": "Estela596 Soria950"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+      "valueAddress": {
+        "city": "Kingston",
+        "state": "Kingston",
+        "country": "JM"
+      }
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+      "valueDecimal": 3.106681119122626
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+      "valueDecimal": 80.89331888087737
+    }
+  ],
+  "identifier": [
+    {
+      "system": "https://github.com/synthetichealth/synthea",
+      "value": "f1aaddce-75c7-b0cc-a3e3-40d90c830c9c"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ],
+        "text": "Medical Record Number"
+      },
+      "system": "http://hospital.smarthealthit.org",
+      "value": "f1aaddce-75c7-b0cc-a3e3-40d90c830c9c"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "SS",
+            "display": "Social Security Number"
+          }
+        ],
+        "text": "Social Security Number"
+      },
+      "system": "http://hl7.org/fhir/sid/us-ssn",
+      "value": "999-70-1886"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "DL",
+            "display": "Driver's license number"
+          }
+        ],
+        "text": "Driver's license number"
+      },
+      "system": "urn:oid:2.16.840.1.113883.4.3.25",
+      "value": "S99939020"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PPN",
+            "display": "Passport Number"
+          }
+        ],
+        "text": "Passport Number"
+      },
+      "system": "http://hl7.org/fhir/sid/passport-USA",
+      "value": "X35874205X"
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "Parra592",
+      "given": [
+        "Claudia969"
+      ],
+      "prefix": [
+        "Mrs."
+      ]
+    },
+    {
+      "use": "maiden",
+      "family": "Vallejo39",
+      "given": [
+        "Claudia969"
+      ],
+      "prefix": [
+        "Mrs."
+      ]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-743-9102",
+      "use": "home"
+    }
+  ],
+  "gender": "female",
+  "birthDate": "1941-06-02",
+  "address": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+          "extension": [
+            {
+              "url": "latitude",
+              "valueDecimal": 42.34689767584986
+            },
+            {
+              "url": "longitude",
+              "valueDecimal": -71.0375330023701
+            }
+          ]
+        }
+      ],
+      "line": [
+        "946 Heathcote Flat Apt 8"
+      ],
+      "city": "Boston",
+      "state": "Massachusetts",
+      "postalCode": "02132",
+      "country": "US"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "D",
+        "display": "Divorced"
+      }
+    ],
+    "text": "Divorced"
+  },
+  "multipleBirthBoolean": false,
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "es",
+            "display": "Spanish"
+          }
+        ],
+        "text": "Spanish"
+      }
+    }
+  ]
+}

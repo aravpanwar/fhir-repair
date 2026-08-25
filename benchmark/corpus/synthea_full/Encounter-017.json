@@ -1,0 +1,57 @@
+{
+  "resourceType": "Encounter",
+  "id": "cb622bb3-7a23-9fcc-39c3-6ea2562769a9",
+  "status": "finished",
+  "class": {
+    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+    "code": "AMB"
+  },
+  "type": [
+    {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "185349003",
+          "display": "Encounter for check up (procedure)"
+        }
+      ],
+      "text": "Encounter for check up (procedure)"
+    }
+  ],
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7",
+    "display": "Mr. Aaron697 Leandro563 Grimes165"
+  },
+  "participant": [
+    {
+      "type": [
+        {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+              "code": "PPRF",
+              "display": "primary performer"
+            }
+          ],
+          "text": "primary performer"
+        }
+      ],
+      "period": {
+        "start": "2017-01-14T18:39:10+05:30",
+        "end": "2017-01-14T19:16:59+05:30"
+      },
+      "individual": {
+        "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|9999999698",
+        "display": "Dr. Bobbye345 Wuckert783"
+      }
+    }
+  ],
+  "period": {
+    "start": "2017-01-14T18:39:10+05:30",
+    "end": "2017-01-14T19:16:59+05:30"
+  },
+  "serviceProvider": {
+    "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|ac0fde88-b0ad-3388-a4a8-b8fc2a4f4af2",
+    "display": "NEW ENGLAND SINAI HOSPITAL"
+  }
+}

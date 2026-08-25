@@ -1,0 +1,38 @@
+{
+  "resourceType": "Condition",
+  "id": "77f0419a-5e36-d5b8-7e37-7eeefed7c48d",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "active"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "90781000119102",
+        "display": "Microalbuminuria due to type 2 diabetes mellitus (disorder)"
+      }
+    ],
+    "text": "Microalbuminuria due to type 2 diabetes mellitus (disorder)"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/06a38e5f-0fb4-4d8e-d106-8086d6cc1bed"
+  },
+  "onsetDateTime": "2012-10-13T18:39:10+05:30",
+  "recordedDate": "2012-10-13T18:39:10+05:30"
+}

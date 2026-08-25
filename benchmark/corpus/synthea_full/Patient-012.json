@@ -1,0 +1,130 @@
+{
+  "resourceType": "Patient",
+  "id": "aff5855f-d411-2f08-57b6-025559937742",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+      "valueString": "Tonette11 Kuhic920"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+      "valueAddress": {
+        "city": "Middleborough",
+        "state": "Massachusetts",
+        "country": "US"
+      }
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+      "valueDecimal": 0.05800100466661656
+    },
+    {
+      "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+      "valueDecimal": 6.941998995333384
+    }
+  ],
+  "identifier": [
+    {
+      "system": "https://github.com/synthetichealth/synthea",
+      "value": "aff5855f-d411-2f08-57b6-025559937742"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ],
+        "text": "Medical Record Number"
+      },
+      "system": "http://hospital.smarthealthit.org",
+      "value": "aff5855f-d411-2f08-57b6-025559937742"
+    },
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "SS",
+            "display": "Social Security Number"
+          }
+        ],
+        "text": "Social Security Number"
+      },
+      "system": "http://hl7.org/fhir/sid/us-ssn",
+      "value": "999-95-1784"
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "Schmidt332",
+      "given": [
+        "Chadwick722",
+        "Laurence43"
+      ]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "555-469-5059",
+      "use": "home"
+    }
+  ],
+  "gender": "male",
+  "birthDate": "2018-10-25",
+  "address": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+          "extension": [
+            {
+              "url": "latitude",
+              "valueDecimal": 42.41421015069507
+            },
+            {
+              "url": "longitude",
+              "valueDecimal": -71.09863563506254
+            }
+          ]
+        }
+      ],
+      "line": [
+        "733 Kilback Promenade Apt 13"
+      ],
+      "city": "Everett",
+      "state": "Massachusetts",
+      "postalCode": "02148",
+      "country": "US"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "S",
+        "display": "Never Married"
+      }
+    ],
+    "text": "Never Married"
+  },
+  "multipleBirthBoolean": false,
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "en-US",
+            "display": "English (United States)"
+          }
+        ],
+        "text": "English (United States)"
+      }
+    }
+  ]
+}

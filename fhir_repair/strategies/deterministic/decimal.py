@@ -1,10 +1,13 @@
 """Normalize FHIR decimal wire format.
 
-Handles common malformations seen in legacy ETL output:
+Handles common malformations seen in legacy ETL output, and in every case
+writes back a JSON number rather than a string, because FHIR `decimal` is a
+number and a quoted value stays invalid:
 
-  - Locale comma as decimal separator: "5,5" -> "5.5"
-  - Surrounding whitespace: " 5.5 " -> "5.5"
-  - Plus sign prefix: "+5.5" -> "5.5"
+  - Locale comma as decimal separator: "5,5" -> 5.5
+  - Surrounding whitespace: " 5.5 " -> 5.5
+  - Plus sign prefix: "+5.5" -> 5.5
+  - A numeric string that needed no reformatting: "5.5" -> 5.5
 
 Refuses on:
   - Currency or unit prefixes/suffixes ("$5.5", "5.5 mg") because stripping
@@ -90,12 +93,19 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     )
 
 
-def _normalize(value: str) -> str | None:
-    """Return the canonical decimal form of `value`, or None if unparseable.
+def _normalize(value: str) -> int | float | None:
+    """Return `value` as a JSON number, or None if unparseable.
 
-    "Canonical" here means: ASCII period as the decimal separator, no
-    surrounding whitespace, no leading plus sign, no thousands separators.
-    The numeric value is preserved bit-for-bit by going through `Decimal`.
+    FHIR `decimal` is a JSON number, not a string. Returning the cleaned
+    string would leave the resource invalid for the very reason the
+    validator flagged it ("the primitive value must be a number"), so the
+    result is a real numeric type.
+
+    Trailing zeros are not preserved: "5.50" becomes 5.5. FHIR treats
+    trailing zeros as significant precision, so that information is lost.
+    It is the lesser cost, because the alternative is a value the validator
+    keeps rejecting. Integral values return `int` so they serialise without
+    a spurious ".0".
     """
     s = value.strip()
 
@@ -112,12 +122,12 @@ def _normalize(value: str) -> str | None:
         s = s[1:]
 
     try:
-        # Round-trip through Decimal to confirm the string parses cleanly.
-        # We return the original string (sans plus and comma) rather than
-        # str(Decimal(s)) because Decimal normalises trailing zeros, which
-        # the FHIR spec preserves as significant precision.
-        Decimal(s)
+        # Parse via Decimal rather than float() so the string is validated
+        # exactly before any binary conversion happens.
+        parsed = Decimal(s)
     except InvalidOperation:
         return None
 
-    return s
+    if parsed == parsed.to_integral_value():
+        return int(parsed)
+    return float(parsed)

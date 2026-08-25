@@ -1,0 +1,57 @@
+{
+  "resourceType": "Encounter",
+  "id": "f77c236d-154a-fcce-adf7-f738de0fd704",
+  "status": "finished",
+  "class": {
+    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+    "code": "AMB"
+  },
+  "type": [
+    {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "702927004",
+          "display": "Urgent care clinic (environment)"
+        }
+      ],
+      "text": "Urgent care clinic (environment)"
+    }
+  ],
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7",
+    "display": "Mr. Aaron697 Leandro563 Grimes165"
+  },
+  "participant": [
+    {
+      "type": [
+        {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+              "code": "PPRF",
+              "display": "primary performer"
+            }
+          ],
+          "text": "primary performer"
+        }
+      ],
+      "period": {
+        "start": "2017-01-07T18:39:10+05:30",
+        "end": "2017-01-07T18:54:10+05:30"
+      },
+      "individual": {
+        "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|9999939694",
+        "display": "Dr. Florencia449 Ara\u00f1a824"
+      }
+    }
+  ],
+  "period": {
+    "start": "2017-01-07T18:39:10+05:30",
+    "end": "2017-01-07T18:54:10+05:30"
+  },
+  "serviceProvider": {
+    "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|bccd7d67-203c-3d93-b6b0-bff5a146cd1d",
+    "display": "CARECENTRAL URGENT CARE MEDICAL GROUP PC"
+  }
+}

@@ -262,28 +262,36 @@ def mutate_identifier_system(
     resource: dict[str, Any],
     rng: random.Random,
 ) -> MutationResult | None:
-    """Replace a canonical Identifier.system URI with a short label."""
+    """Replace a canonical Identifier.system URI with a short label.
+
+    Scans the whole identifier list rather than only the first entry. Real
+    Synthea patients carry several identifiers and the canonical ones sit
+    behind Synthea's own generator id, so checking index 0 alone found
+    nothing on a generated corpus.
+    """
     identifiers = resource.get("identifier")
     if not isinstance(identifiers, list) or not identifiers:
         return None
 
-    entry = identifiers[0]
-    if not isinstance(entry, dict):
-        return None
+    for index, entry in enumerate(identifiers):
+        if not isinstance(entry, dict):
+            continue
 
-    system = entry.get("system")
-    label = _IDENTIFIER_SYSTEM_LABELS.get(system) if isinstance(system, str) else None
-    if label is None:
-        return None
+        system = entry.get("system")
+        label = _IDENTIFIER_SYSTEM_LABELS.get(system) if isinstance(system, str) else None
+        if label is None:
+            continue
 
-    out = copy.deepcopy(resource)
-    out["identifier"][0]["system"] = label
-    return MutationResult(
-        resource=out,
-        description="identifier-system-label",
-        location=f"{resource['resourceType']}.identifier[0].system",
-        original_value=system,
-    )
+        out = copy.deepcopy(resource)
+        out["identifier"][index]["system"] = label
+        return MutationResult(
+            resource=out,
+            description="identifier-system-label",
+            location=f"{resource['resourceType']}.identifier[{index}].system",
+            original_value=system,
+        )
+
+    return None
 
 
 # Registry of mutations included in the benchmark.

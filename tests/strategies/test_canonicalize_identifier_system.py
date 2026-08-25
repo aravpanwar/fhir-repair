@@ -67,6 +67,44 @@ def test_non_string_is_refused():
     assert action.risk == "refused"
 
 
+def test_accepts_parent_identifier_element_location():
+    """HAPI reports this error on the Identifier, not on Identifier.system."""
+    resource = {
+        "resourceType": "Patient",
+        "identifier": [
+            {"system": "https://github.com/synthetichealth/synthea", "value": "a"},
+            {"system": "http://hospital.smarthealthit.org", "value": "b"},
+            {"system": "SSN", "value": "999-99-9999"},
+        ],
+    }
+    action = identifier_strategy.apply(resource, _error("Patient.identifier[2]"))
+
+    assert action.risk != "refused"
+    assert resource["identifier"][2]["system"] == "http://hl7.org/fhir/sid/us-ssn"
+    # Sibling identifiers are untouched.
+    assert resource["identifier"][0]["system"] == "https://github.com/synthetichealth/synthea"
+    assert action.before == "SSN"
+    assert action.after == "http://hl7.org/fhir/sid/us-ssn"
+
+
+def test_parent_location_with_unmappable_system_is_refused():
+    resource = {
+        "resourceType": "Patient",
+        "identifier": [{"system": "http://hospital.example/mrn", "value": "1"}],
+    }
+    action = identifier_strategy.apply(resource, _error("Patient.identifier[0]"))
+    assert action.risk == "refused"
+
+
+def test_parent_location_without_system_is_refused():
+    resource = {
+        "resourceType": "Patient",
+        "identifier": [{"value": "no-system-here"}],
+    }
+    action = identifier_strategy.apply(resource, _error("Patient.identifier[0]"))
+    assert action.risk == "refused"
+
+
 def test_strategy_metadata_is_well_formed():
     assert identifier_strategy.NAME == "deterministic.canonicalize_identifier_system"
     assert identifier_strategy.PERMISSION == "allow_reformat"

@@ -1,0 +1,38 @@
+{
+  "resourceType": "Condition",
+  "id": "f1cba0a0-03d0-4e88-fe0f-ed375a2f3a47",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "active"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "278860009",
+        "display": "Chronic low back pain (finding)"
+      }
+    ],
+    "text": "Chronic low back pain (finding)"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/7a39158c-8f69-01bd-ddbb-e1ad74238c93"
+  },
+  "onsetDateTime": "2014-02-03T18:39:10+05:30",
+  "recordedDate": "2014-02-03T18:39:10+05:30"
+}

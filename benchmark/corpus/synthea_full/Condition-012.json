@@ -1,0 +1,39 @@
+{
+  "resourceType": "Condition",
+  "id": "a610b731-92fb-f0d4-75cf-aa1424cefffc",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "resolved"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "160903007",
+        "display": "Full-time employment (finding)"
+      }
+    ],
+    "text": "Full-time employment (finding)"
+  },
+  "subject": {
+    "reference": "Patient/2a76c0e3-1e73-2109-3d5e-8a8871fe35d7"
+  },
+  "encounter": {
+    "reference": "Encounter/9831558f-e8a6-e29e-e7d6-ef3cdc305585"
+  },
+  "onsetDateTime": "2015-10-31T19:18:17+05:30",
+  "abatementDateTime": "2017-01-14T19:16:59+05:30",
+  "recordedDate": "2015-10-31T19:18:17+05:30"
+}

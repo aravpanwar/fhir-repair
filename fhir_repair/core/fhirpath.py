@@ -31,14 +31,60 @@ from typing import Any
 
 import fhirpathpy
 
-# Matches a path segment: `name` or `name[42]`.
-_SEGMENT_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)(?:\[(\d+)\])?$")
+# Matches a path segment: `name`, `name[42]`, or `name[x]`.
+_SEGMENT_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)(?:\[(\d+|x)\])?$")
 
 # FHIRPath choice-element notation: `<base>.ofType(<Type>)`. HAPI emits
 # this for polymorphic fields like `value[x]`, e.g. `Observation.value.
 # ofType(Quantity)`. The JSON property name is `<base><Type>` with the
 # type's first letter capitalised, e.g. `valueQuantity`.
 _OF_TYPE_RE = re.compile(r"\.ofType\(([A-Za-z][A-Za-z0-9]*)\)")
+
+# Abstract choice-element notation: `<base>[x]`, e.g. `Observation.value[x]`.
+# Unlike the ofType form this does not name a concrete type, so it cannot be
+# canonicalised from the path alone. It is resolved against the resource by
+# looking for the one `<base><Type>` key that is actually present.
+_CHOICE_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\[x\]$")
+
+
+class Choice:
+    """An unresolved `<base>[x]` path segment.
+
+    Carries only the base name. Which concrete property it refers to
+    (`valueQuantity`, `valueString`, ...) depends on the resource, so it is
+    resolved during the walk rather than at parse time.
+    """
+
+    __slots__ = ("base",)
+
+    def __init__(self, base: str) -> None:
+        self.base = base
+
+    def resolve(self, cursor: Any) -> str | None:
+        """Return the concrete property name present on `cursor`, if any.
+
+        Ambiguity is treated as unresolvable: a well-formed resource carries
+        exactly one member of a choice element, and guessing between two
+        would risk repairing the wrong field.
+        """
+        if not isinstance(cursor, dict):
+            return None
+        prefix = self.base
+        matches = [
+            key
+            for key in cursor
+            if key.startswith(prefix) and len(key) > len(prefix) and key[len(prefix)].isupper()
+        ]
+        return matches[0] if len(matches) == 1 else None
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Choice) and other.base == self.base
+
+    def __hash__(self) -> int:
+        return hash((Choice, self.base))
+
+    def __repr__(self) -> str:
+        return f"Choice({self.base!r})"
 
 
 def evaluate(resource: dict[str, Any], path: str) -> list[Any]:
@@ -60,11 +106,13 @@ def get_at_path(resource: dict[str, Any], path: str) -> Any:
     comes back as a one-element list, which is what cardinality fixes
     need to see.
 
-    Returns None on syntactically unparseable paths. HAPI sometimes emits
-    forms we do not yet support, e.g. the abstract `<name>[x]` choice
-    notation that does not name a concrete type. Strategies that depend
-    on a concrete value handle the None case as a refusal, which routes
-    the error to the next chain entry or to unresolved.
+    The abstract `<name>[x]` choice notation is resolved against the
+    resource: `Observation.value[x].value` finds `valueQuantity.value` when
+    that is the member present. Returns None when the path is unparseable,
+    when it matches nothing, or when a choice element is ambiguous.
+    Strategies that depend on a concrete value handle the None case as a
+    refusal, which routes the error to the next chain entry or to
+    unresolved.
     """
     try:
         parts = _parse_simple_path(path)
@@ -138,10 +186,15 @@ def delete_at_path(resource: dict[str, Any], path: str) -> bool:
     return _remove(cursor, parts[-1])
 
 
-def _remove(cursor: Any, part: str | tuple[str, int]) -> bool:
+def _remove(cursor: Any, part: str | tuple[str, int] | Choice) -> bool:
     """Delete a single segment from its parent container."""
     try:
-        if isinstance(part, tuple):
+        if isinstance(part, Choice):
+            resolved = part.resolve(cursor)
+            if resolved is None:
+                return False
+            del cursor[resolved]
+        elif isinstance(part, tuple):
             name, index = part
             del cursor[name][index]
         else:
@@ -151,26 +204,32 @@ def _remove(cursor: Any, part: str | tuple[str, int]) -> bool:
     return True
 
 
-def _parse_simple_path(path: str) -> list[str | tuple[str, int]]:
+def _parse_simple_path(path: str) -> list[str | tuple[str, int] | Choice]:
     """Parse `Patient.contact[0].telecom[1].value` into a sequence of segments.
 
-    Each segment is either a string (plain attribute) or a (name, index)
-    tuple (indexed attribute). FHIRPath choice-element notation is
-    canonicalised first: `Observation.value.ofType(Quantity).value`
-    becomes `Observation.valueQuantity.value`.
+    Each segment is a string (plain attribute), a (name, index) tuple
+    (indexed attribute), or a `Choice` (abstract `name[x]` element, resolved
+    later against the resource). FHIRPath's concrete choice notation is
+    canonicalised first: `Observation.value.ofType(Quantity).value` becomes
+    `Observation.valueQuantity.value`.
     """
     if not path:
         raise ValueError("Cannot parse an empty path")
 
     canonical = _canonicalise_choice_elements(path)
 
-    out: list[str | tuple[str, int]] = []
+    out: list[str | tuple[str, int] | Choice] = []
     for raw in canonical.split("."):
         match = _SEGMENT_RE.match(raw)
         if not match:
             raise ValueError(f"Cannot parse FHIRPath segment: {raw!r}")
         name, index = match.group(1), match.group(2)
-        out.append((name, int(index)) if index is not None else name)
+        if index == "x":
+            out.append(Choice(name))
+        elif index is not None:
+            out.append((name, int(index)))
+        else:
+            out.append(name)
     return out
 
 
@@ -190,15 +249,27 @@ def _canonicalise_choice_elements(path: str) -> str:
     return _OF_TYPE_RE.sub(replace, path)
 
 
-def _descend(cursor: Any, part: str | tuple[str, int]) -> Any:
+def _descend(cursor: Any, part: str | tuple[str, int] | Choice) -> Any:
+    if isinstance(part, Choice):
+        resolved = part.resolve(cursor)
+        if resolved is None:
+            raise KeyError(part.base)
+        return cursor[resolved]
     if isinstance(part, tuple):
         name, index = part
         return cursor[name][index]
     return cursor[part]
 
 
-def _assign(cursor: Any, part: str | tuple[str, int], value: Any) -> None:
-    if isinstance(part, tuple):
+def _assign(cursor: Any, part: str | tuple[str, int] | Choice, value: Any) -> None:
+    if isinstance(part, Choice):
+        resolved = part.resolve(cursor)
+        if resolved is None:
+            # Writing to an unresolved choice element would have to invent
+            # the type suffix, so refuse rather than guess.
+            raise ValueError(f"Cannot resolve choice element {part.base}[x] on this resource")
+        cursor[resolved] = value
+    elif isinstance(part, tuple):
         name, index = part
         cursor[name][index] = value
     else:

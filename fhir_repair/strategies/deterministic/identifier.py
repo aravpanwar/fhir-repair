@@ -13,6 +13,9 @@ single, nationally defined canonical URI, where the mapping is a fact rather
 than a guess. Local systems (MRN, account number) have no universal URI and
 are never mapped; those route to review.
 
+Accepts either the `Identifier.system` path or the parent `Identifier`
+element as the error location, because HAPI reports this one on the parent.
+
 Refuses on:
   - A value that is not a string.
   - A label that is not in the synonym table and needs no whitespace fix.
@@ -49,7 +52,16 @@ _SYNONYMS: dict[str, str] = {
 
 def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     """Canonicalize the identifier system at `error.location`."""
-    before = get_at_path(resource, error.location)
+    location = error.location
+    before = get_at_path(resource, location)
+
+    # HAPI reports this error on the Identifier element itself
+    # (`Patient.identifier[2]`), not on the offending field. Descend to
+    # `.system` so the location the strategy writes back to is the one that
+    # actually holds the value.
+    if isinstance(before, dict):
+        location = f"{location}.system"
+        before = before.get("system")
 
     if not isinstance(before, str):
         return refused(
@@ -72,7 +84,7 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
             f"no canonical system known for {before!r}",
         )
 
-    set_at_path(resource, error.location, after)
+    set_at_path(resource, location, after)
 
     return RepairAction(
         error=error,
