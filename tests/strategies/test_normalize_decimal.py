@@ -20,18 +20,19 @@ def _error(location: str = "Observation.valueQuantity.value") -> ValidationError
 @pytest.mark.parametrize(
     "raw, expected",
     [
-        ("5,5", "5.5"),  # locale comma
-        (" 5.5 ", "5.5"),  # surrounding whitespace
-        ("+5.5", "5.5"),  # plus sign prefix
-        ("5.5", "5.5"),  # already canonical
-        ("0", "0"),  # integer
-        ("100", "100"),  # integer, multi-digit
-        ("0.1", "0.1"),  # leading zero
-        ("-3.14", "-3.14"),  # negative
-        ("12.50", "12.50"),  # trailing zeros preserved (FHIR significant precision)
+        ("5,5", 5.5),  # locale comma
+        (" 5.5 ", 5.5),  # surrounding whitespace
+        ("+5.5", 5.5),  # plus sign prefix
+        ("5.5", 5.5),  # string that only needed retyping
+        ("0", 0),  # integer
+        ("100", 100),  # integer, multi-digit
+        ("0.1", 0.1),  # leading zero
+        ("-3.14", -3.14),  # negative
+        ("12.50", 12.5),  # trailing zero lost; see _normalize docstring
     ],
 )
-def test_normalises_canonical_form(raw, expected):
+def test_normalises_to_a_json_number(raw, expected):
+    """FHIR decimal is a JSON number; a quoted value stays invalid."""
     resource = {
         "resourceType": "Observation",
         "valueQuantity": {"value": raw},
@@ -40,6 +41,26 @@ def test_normalises_canonical_form(raw, expected):
     assert action.risk == "low"
     assert action.after == expected
     assert resource["valueQuantity"]["value"] == expected
+    # The type matters, not just the value: "5.5" == 5.5 is False in JSON.
+    assert isinstance(resource["valueQuantity"]["value"], (int, float))
+    assert not isinstance(resource["valueQuantity"]["value"], str)
+
+
+@pytest.mark.parametrize("raw, expected", [("0", 0), ("100", 100), ("-7", -7)])
+def test_integral_values_stay_integers(raw, expected):
+    """Avoids serialising a whole number as "100.0"."""
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": raw}}
+    decimal_strategy.apply(resource, _error())
+    assert resource["valueQuantity"]["value"] == expected
+    assert isinstance(resource["valueQuantity"]["value"], int)
+
+
+def test_result_serialises_as_a_json_number():
+    import json
+
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": "69,64"}}
+    decimal_strategy.apply(resource, _error())
+    assert '"value": 69.64' in json.dumps(resource)
 
 
 def test_already_numeric_is_refused():
