@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "fhir-repair: deterministic-first repair of non-conformant FHIR R4 resources"
+abstract: >-
+  A toolkit that takes broken FHIR R4 resources and produces validator-passing
+  fixed versions. Deterministic strategies handle what can be fixed
+  mechanically, an LLM sees only the genuinely interpretive remainder, and a
+  hallucination guard refuses changes that would invent clinical data. Every
+  action is recorded in a machine-readable audit log.
+type: software
+authors:
+  - given-names: Arav
+    family-names: Panwar
+    email: aravpanwar@outlook.com
+    # Add your ORCID once you have one (https://orcid.org/register). It is a
+    # prerequisite for most journal submissions.
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/aravpanwar/fhir-repair"
+url: "https://github.com/aravpanwar/fhir-repair"
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-04-27"
+keywords:
+  - FHIR
+  - HL7
+  - health informatics
+  - interoperability
+  - data quality
+  - validation
+  - large language models
+references:
+  - type: software
+    title: Synthea
+    notes: Synthetic patient generator used to produce the benchmark corpus.
+    repository-code: "https://github.com/synthetichealth/synthea"
+  - type: software
+    title: HAPI FHIR
+    notes: Reference validator the repair loop validates against.
+    url: "https://hapifhir.io/"
