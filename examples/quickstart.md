@@ -97,7 +97,7 @@ your API key:
 ```bash
 export LLM_API_KEY=sk-ant-...
 export LLM_PROVIDER=anthropic
-export LLM_MODEL=claude-sonnet-4-6
+export LLM_MODEL=claude-sonnet-5
 ```
 
 Pass a config that maps interpretive errors to LLM strategies:
