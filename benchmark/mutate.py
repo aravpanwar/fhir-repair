@@ -5,10 +5,18 @@ applies one well-defined corruption, and returns a broken copy plus
 metadata describing what was done. The metadata is the ground truth a
 benchmark scorer compares the repaired output against.
 
-All eight mutation classes from the study design are implemented: date
-format, decimal format, singleton wrap, missing required, invalid code
-binding, invariant violation, telecom format, and identifier system. Each
-mutation returns None for resources it does not apply to, so the corpus
+Twelve classes are implemented, in two groups.
+
+The eight original study-design classes: date format, decimal format,
+singleton wrap, missing required, invalid code binding, invariant violation,
+telecom format, and identifier system.
+
+Four interpretive classes added for the error-tier study: unit mismatch,
+date precision, bad comparator, and free-text code. These corrupt a value in
+a way that is readable but not mechanically reversible, which is what
+separates the interpretive tier from the deterministic one.
+
+Each mutation returns None for resources it does not apply to, so the corpus
 generator simply skips inapplicable pairs.
 """
 
@@ -308,6 +316,145 @@ def mutate_identifier_system(
     return None
 
 
+# Interpretive mutation classes.
+#
+# The four below share a property that separates them from the deterministic
+# set: the corrupted value is readable but the correct replacement is not
+# mechanically derivable from it. A human knows "Male (self-reported)" means
+# `male`, but no rule in the codebase produces that mapping. Each was checked
+# against HAPI 7.4.0 to confirm it actually raises a validation error, and
+# against every deterministic strategy to confirm they all refuse.
+#
+# Candidates that were tried and dropped because HAPI accepts them: swapping
+# a LOINC code onto a SNOMED system, and a `display` that disagrees with its
+# code. Both need a terminology server to detect, and the benchmark's whole
+# point is undermined by a class that dispatches nothing.
+
+# A unit display string in place of the UCUM code. UCUM is case-sensitive and
+# symbolic (`mg/dL`), so a spelled-out unit is unresolvable.
+_UNIT_SPELLED_OUT = {
+    "mg/dL": "milligram per deciliter",
+    "mmol/L": "millimole per liter",
+    "kg": "kilogram",
+    "cm": "centimeter",
+    "g/dL": "gram per deciliter",
+    "%": "percent",
+    "/min": "per minute",
+    "mm[Hg]": "millimeter of mercury",
+}
+
+
+def mutate_unit_mismatch(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Replace a UCUM code with its spelled-out unit name."""
+    quantity = resource.get("valueQuantity")
+    if not isinstance(quantity, dict):
+        return None
+
+    code = quantity.get("code")
+    spelled = _UNIT_SPELLED_OUT.get(code) if isinstance(code, str) else None
+    if spelled is None:
+        return None
+
+    out = copy.deepcopy(resource)
+    out["valueQuantity"]["code"] = spelled
+    return MutationResult(
+        resource=out,
+        description="unit-spelled-out",
+        location=f"{resource['resourceType']}.valueQuantity.code",
+        original_value=code,
+    )
+
+
+def mutate_date_precision(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Give a `date` field full instant precision.
+
+    FHIR `date` does not accept a time component. Truncating back to the day
+    is the obvious repair to a reader, but choosing to discard time rather
+    than reinterpret the field is a judgement, so no deterministic strategy
+    claims it.
+    """
+    original = resource.get("birthDate")
+    if not isinstance(original, str) or len(original) != 10:
+        return None
+
+    out = copy.deepcopy(resource)
+    out["birthDate"] = f"{original}T00:00:00Z"
+    return MutationResult(
+        resource=out,
+        description="date-precision-instant",
+        location=f"{resource['resourceType']}.birthDate",
+        original_value=original,
+    )
+
+
+def mutate_bad_comparator(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Put a non-FHIR symbol in `Quantity.comparator`.
+
+    The bound ValueSet is `<`, `<=`, `>=`, `>`. A tilde reads as
+    "approximately" to a human but is not in the set, and there is no
+    mechanical mapping from it to a member.
+    """
+    quantity = resource.get("valueQuantity")
+    if not isinstance(quantity, dict) or "comparator" in quantity:
+        return None
+    if not isinstance(quantity.get("value"), (int, float)):
+        return None
+
+    out = copy.deepcopy(resource)
+    out["valueQuantity"]["comparator"] = "~"
+    return MutationResult(
+        resource=out,
+        description="comparator-not-in-valueset",
+        location=f"{resource['resourceType']}.valueQuantity.comparator",
+        original_value=None,
+    )
+
+
+# Free-text renderings of a bound code. Unlike the abbreviations in
+# `_CODE_CORRUPTION`, these carry qualifiers a reader has to strip.
+_FREETEXT_CODE = {
+    "male": "Male (self-reported)",
+    "female": "Female (self-reported)",
+    "final": "Final result",
+    "preliminary": "Preliminary result",
+}
+
+
+def mutate_freetext_code(
+    resource: dict[str, Any],
+    rng: random.Random,
+) -> MutationResult | None:
+    """Replace a bound code with a free-text rendering of it."""
+    for name in _BOUND_CODE_FIELDS:
+        value = resource.get(name)
+        if not isinstance(value, str):
+            continue
+
+        text = _FREETEXT_CODE.get(value)
+        if text is None:
+            continue
+
+        out = copy.deepcopy(resource)
+        out[name] = text
+        return MutationResult(
+            resource=out,
+            description=f"freetext-code-{name}",
+            location=f"{resource['resourceType']}.{name}",
+            original_value=value,
+        )
+
+    return None
+
+
 # Registry of mutations included in the benchmark.
 MUTATIONS: dict[str, Mutation] = {
     "date_format": mutate_date_format,
@@ -318,6 +465,11 @@ MUTATIONS: dict[str, Mutation] = {
     "invariant_violation": mutate_invariant_violation,
     "telecom_format": mutate_telecom_format,
     "identifier_system": mutate_identifier_system,
+    # Interpretive classes.
+    "unit_mismatch": mutate_unit_mismatch,
+    "date_precision": mutate_date_precision,
+    "bad_comparator": mutate_bad_comparator,
+    "freetext_code": mutate_freetext_code,
 }
 
 

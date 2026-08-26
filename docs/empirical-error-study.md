@@ -115,3 +115,23 @@ requires:
 - [ ] Submitted
 
 Track progress via the `study` label in GitHub Issues.
+
+## Note on tier proportions (added during Corpus A analysis)
+
+The three-tier split is sensitive to the mutation mix, and that limits what
+can be claimed from a synthetic corpus alone.
+
+On the original 8 classes the split over detected errors was 61% / 22% / 17%
+(deterministic / interpretive / must-refuse). Adding four interpretive
+classes moved it to 46% / 42% / 13% without changing the tool, the corpus,
+or the validator. The proportions describe the benchmark, not FHIR.
+
+Two consequences for the study:
+
+- Report per-class results as primary and the aggregate split as
+  illustrative. An aggregate over a hand-chosen mutation mix is not an
+  estimate of any real-world population.
+- The wild-sample corpus is what makes a distributional claim possible,
+  because its class mix is observed rather than chosen. Until then, the
+  defensible claims are the per-class ones: which tier a given error class
+  falls into, and that the tiers require different machinery.

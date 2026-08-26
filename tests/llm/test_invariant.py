@@ -207,3 +207,42 @@ def test_candidates_exclude_structural_elements():
     assert "valueQuantity" in candidates
     assert "resourceType" not in candidates
     assert "id" not in candidates
+
+
+def test_non_invariant_error_is_refused():
+    """The strategy sits last in a chain and must not become a catch-all.
+
+    Deleting an Observation's value does silence a bad-comparator error, and
+    that is exactly the data destruction the guard exists to prevent.
+    """
+    strategy = _strategy('{"remove": "valueQuantity"}')
+    resource = _observation()
+    error = ValidationError(
+        code="processing",
+        severity="error",
+        location="Observation.value.ofType(Quantity).comparator",
+        message="Unknown code 'http://hl7.org/fhir/quantity-comparator#~'",
+    )
+
+    action = strategy.apply(resource, error)
+
+    assert action.risk == "refused"
+    assert resource["valueQuantity"] == {"value": 72, "unit": "beats/min"}
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Constraint failed: obs-6: 'dataAbsentReason SHALL only be present...'",
+        "Invariant violated at Observation",
+    ],
+)
+def test_invariant_phrasings_are_accepted(message):
+    strategy = _strategy('{"remove": "dataAbsentReason"}')
+    resource = _observation()
+    error = ValidationError("processing", "error", "Observation", message)
+
+    action = strategy.apply(resource, error)
+
+    assert action.risk != "refused"
+    assert "dataAbsentReason" not in resource

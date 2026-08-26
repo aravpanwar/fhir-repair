@@ -143,13 +143,24 @@ def detect_regressions(
     `Patient.name[0].family` counts: the error sits inside the element the
     batch changed. New errors on genuinely unrelated paths are not
     regressions; they were merely uncovered by the fix.
+
+    The signature includes the message, not just the code and location.
+    Swapping one invalid code for another invalid code produces an error
+    with the same code and location as the original, so a signature of
+    `(code, location)` reads it as the pre-existing error and lets the
+    non-fix stand. The message is what distinguishes them.
     """
-    before_set = {(e.code, e.location) for e in before_errors}
+    before_set = {_signature(e) for e in before_errors}
     return [
         e
         for e in after_errors
-        if (e.code, e.location) not in before_set and _on_touched_path(e.location, touched_paths)
+        if _signature(e) not in before_set and _on_touched_path(e.location, touched_paths)
     ]
+
+
+def _signature(error: ValidationError) -> tuple[str, str, str]:
+    """Identity of an error for before/after comparison."""
+    return (error.code, error.location, error.message)
 
 
 def _on_touched_path(location: str, touched_paths: set[str]) -> bool:

@@ -181,3 +181,87 @@ def test_mutate_corpus_skips_non_resource_json(tmp_path):
 
     assert manifests
     assert all("Patient-001" in m["valid_path"] for m in manifests)
+
+
+# Interpretive mutation classes. Each corrupts a value that is readable but
+# not mechanically reversible, and each was verified to raise a real HAPI
+# error (unlike telecom_format, which base R4 accepts).
+
+
+def test_unit_mismatch_spells_out_the_ucum_code():
+    resource = {
+        "resourceType": "Observation",
+        "valueQuantity": {"value": 69.64, "unit": "mg/dL", "code": "mg/dL"},
+    }
+    result = mutate.mutate_unit_mismatch(resource, _RNG)
+    assert result is not None
+    assert result.resource["valueQuantity"]["code"] == "milligram per deciliter"
+    assert result.original_value == "mg/dL"
+    # The human-readable `unit` is untouched; only the coded form breaks.
+    assert result.resource["valueQuantity"]["unit"] == "mg/dL"
+
+
+def test_unit_mismatch_skips_unknown_unit():
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": 1, "code": "furlong"}}
+    assert mutate.mutate_unit_mismatch(resource, _RNG) is None
+
+
+def test_unit_mismatch_skips_without_quantity():
+    assert mutate.mutate_unit_mismatch({"resourceType": "Patient"}, _RNG) is None
+
+
+def test_date_precision_adds_a_time_component():
+    resource = {"resourceType": "Patient", "birthDate": "1975-08-23"}
+    result = mutate.mutate_date_precision(resource, _RNG)
+    assert result is not None
+    assert result.resource["birthDate"] == "1975-08-23T00:00:00Z"
+    assert result.original_value == "1975-08-23"
+
+
+def test_date_precision_skips_an_already_precise_date():
+    resource = {"resourceType": "Patient", "birthDate": "1975-08-23T00:00:00Z"}
+    assert mutate.mutate_date_precision(resource, _RNG) is None
+
+
+def test_bad_comparator_adds_a_non_valueset_symbol():
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": 69.64}}
+    result = mutate.mutate_bad_comparator(resource, _RNG)
+    assert result is not None
+    assert result.resource["valueQuantity"]["comparator"] == "~"
+    assert result.original_value is None
+
+
+def test_bad_comparator_skips_when_one_is_present():
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": 1, "comparator": "<"}}
+    assert mutate.mutate_bad_comparator(resource, _RNG) is None
+
+
+def test_bad_comparator_skips_without_a_numeric_value():
+    resource = {"resourceType": "Observation", "valueQuantity": {"unit": "kg"}}
+    assert mutate.mutate_bad_comparator(resource, _RNG) is None
+
+
+def test_freetext_code_replaces_a_bound_code():
+    resource = {"resourceType": "Patient", "gender": "male"}
+    result = mutate.mutate_freetext_code(resource, _RNG)
+    assert result is not None
+    assert result.resource["gender"] == "Male (self-reported)"
+    assert result.original_value == "male"
+    assert result.location == "Patient.gender"
+
+
+def test_freetext_code_handles_observation_status():
+    resource = {"resourceType": "Observation", "status": "final"}
+    result = mutate.mutate_freetext_code(resource, _RNG)
+    assert result is not None
+    assert result.resource["status"] == "Final result"
+
+
+def test_freetext_code_skips_unmapped_value():
+    resource = {"resourceType": "Patient", "gender": "other"}
+    assert mutate.mutate_freetext_code(resource, _RNG) is None
+
+
+def test_interpretive_mutations_are_registered():
+    for name in ("unit_mismatch", "date_precision", "bad_comparator", "freetext_code"):
+        assert name in mutate.MUTATIONS, name
