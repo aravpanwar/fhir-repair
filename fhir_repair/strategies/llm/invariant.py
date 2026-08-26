@@ -122,6 +122,20 @@ class InvariantStrategy:
         resource: dict[str, Any],
         error: ValidationError,
     ) -> RepairAction:
+        # Only act on an actual invariant failure. This strategy is usually
+        # last in a chain, so without this check it becomes a catch-all that
+        # deletes clinical content to silence any error the earlier
+        # strategies refused: an unparseable unit, a bad comparator, a
+        # malformed code. Removing an Observation's value does make the
+        # validator happy, and it is exactly the behaviour the hallucination
+        # guard exists to prevent.
+        if not _is_invariant_failure(error):
+            return self._refuse(
+                error,
+                None,
+                "error is not an invariant failure",
+            )
+
         rendered = self._template.render(
             resource=json.dumps(resource, separators=(",", ":")),
             error=error,
@@ -192,6 +206,18 @@ class InvariantStrategy:
 # Removing one of these would never be the right way to satisfy an
 # invariant, whatever the model says.
 _PROTECTED_ELEMENTS = frozenset({"resourceType", "id", "meta", "implicitRules"})
+
+
+def _is_invariant_failure(error: ValidationError) -> bool:
+    """True if the validator reported a failed invariant.
+
+    HAPI phrases these as "Constraint failed: <key>: '<expression>'". The
+    code is the generic `processing`, so the message is the only signal.
+    Matching on it is unavoidably validator-specific; a different validator
+    adapter would need its own rule.
+    """
+    message = error.message.lower()
+    return "constraint failed" in message or "invariant" in message
 
 
 def _candidate_elements(resource: dict[str, Any]) -> set[str]:
