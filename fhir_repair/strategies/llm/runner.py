@@ -94,6 +94,7 @@ class LLMStrategy:
         max_retries: int = 3,
         backoff_base_s: float = 1.0,
         backoff_max_s: float = 30.0,
+        scalar_only: bool = False,
     ) -> None:
         self.name = name
         self.version = version
@@ -109,6 +110,10 @@ class LLMStrategy:
         self._max_retries = max_retries
         self._backoff_base_s = backoff_base_s
         self._backoff_max_s = backoff_max_s
+        # Set on strategies whose answer is a single value. Guards against
+        # writing that value over a whole element when the validator reports
+        # the error one level up.
+        self._scalar_only = scalar_only
 
     def apply(
         self,
@@ -116,6 +121,24 @@ class LLMStrategy:
         error: ValidationError,
     ) -> RepairAction:
         before = get_at_path(resource, error.location)
+
+        if self._scalar_only and isinstance(before, dict | list):
+            # The validator sometimes reports a code problem against the
+            # containing element rather than the code itself (a Quantity
+            # rather than Quantity.code, say). A strategy that answers with
+            # a code would overwrite the whole structure with a bare string,
+            # which is worse than the error it was fixing.
+            return refused(
+                error,
+                self.name,
+                self.version,
+                self.permission,
+                before,
+                (
+                    f"error location {error.location!r} holds a "
+                    f"{type(before).__name__}, not a single value"
+                ),
+            )
 
         spec_excerpt = ""
         if self._retriever is not None:
@@ -346,6 +369,7 @@ def register_default_llm_strategies(
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
+            scalar_only=True,
         )
     )
     # Not an LLMStrategy: an invariant failure is reported against the
