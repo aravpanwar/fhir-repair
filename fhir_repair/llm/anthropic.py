@@ -95,9 +95,14 @@ class AnthropicProvider:
         request: dict[str, Any] = {
             "model": self._model,
             "max_tokens": kwargs.get("max_tokens", 1024),
-            "temperature": kwargs.get("temperature", 0.0),
             "messages": messages,
         }
+        # Only send `temperature` when the caller asked for one. The Claude
+        # 4.6+ family (Sonnet 5, Opus 5, ...) removed sampling parameters and
+        # rejects `temperature` with a 400, and these models default to
+        # deterministic-enough behaviour for repair without it.
+        if "temperature" in kwargs:
+            request["temperature"] = kwargs["temperature"]
         if system_blocks:
             request["system"] = system_blocks
 

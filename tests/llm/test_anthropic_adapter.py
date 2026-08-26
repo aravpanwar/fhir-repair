@@ -58,6 +58,30 @@ def fake_anthropic(monkeypatch):
     return captured
 
 
+def test_temperature_is_omitted_by_default(fake_anthropic, monkeypatch):
+    """The Claude 4.6+ family rejects `temperature` with a 400."""
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.anthropic import AnthropicProvider
+
+    AnthropicProvider().complete([PromptSegment(role="user", text="hi", stable=False)])
+
+    assert "temperature" not in fake_anthropic["request"]
+
+
+def test_temperature_is_sent_when_explicitly_requested(fake_anthropic, monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.anthropic import AnthropicProvider
+
+    AnthropicProvider().complete(
+        [PromptSegment(role="user", text="hi", stable=False)],
+        temperature=0.5,
+    )
+
+    assert fake_anthropic["request"]["temperature"] == 0.5
+
+
 def test_stable_segments_get_cache_control(fake_anthropic, monkeypatch):
     monkeypatch.setenv("LLM_API_KEY", "test-key")
 
