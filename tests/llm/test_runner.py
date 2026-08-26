@@ -84,3 +84,42 @@ def test_unparseable_response_is_refused():
     action = _strategy("not json").apply(resource, _error())
     assert action.risk == "refused"
     assert resource["gender"] == "M"
+
+
+def test_unwritable_error_location_is_refused():
+    """A whole-resource error has no field to assign to.
+
+    Raising here used to abort an entire benchmark run partway through.
+    """
+    from fhir_repair.strategies.llm.runner import _PROMPTS_DIR
+
+    class _Provider:
+        def complete(self, segments, **kwargs):
+            return Completion(
+                text='{"value": "anything"}',
+                input_tokens=1,
+                output_tokens=1,
+                cached_tokens=0,
+                model="stub",
+                provider="stub",
+            )
+
+        def supports_caching(self) -> bool:
+            return False
+
+    strategy = LLMStrategy(
+        name="llm",
+        version="1.0.0",
+        permission="allow_reformat",
+        risk="medium",
+        prompt_path=_PROMPTS_DIR / "repair_unknown.v1.jinja",
+        prompt_version="v1",
+        provider=_Provider(),
+    )
+    resource = {"resourceType": "Encounter", "status": "finished"}
+    error = ValidationError("processing", "error", "Encounter", "whole-resource constraint")
+
+    action = strategy.apply(resource, error)
+
+    assert action.risk == "refused"
+    assert resource == {"resourceType": "Encounter", "status": "finished"}

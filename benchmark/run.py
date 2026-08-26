@@ -53,6 +53,13 @@ def run_benchmark(
             mutated = json.loads(Path(manifest["mutated_path"]).read_text(encoding="utf-8"))
             valid = json.loads(Path(manifest["valid_path"]).read_text(encoding="utf-8"))
 
+            # Did the validator flag the corruption at all? A mutation the
+            # validator accepts never reaches a strategy, so scoring it as a
+            # repair would credit the tool for doing nothing. Recorded per
+            # case rather than assumed per class, because whether a given
+            # corruption is detected depends on the validator and profile.
+            detected = bool(validator.validate(mutated, config.target_profile))
+
             t0 = time.perf_counter()
             outcome = repairer.repair(mutated)
             duration_ms = int((time.perf_counter() - t0) * 1000)
@@ -62,6 +69,7 @@ def run_benchmark(
                     "mutation": manifest["mutation"],
                     "description": manifest["description"],
                     "location": manifest["location"],
+                    "validator_detected": detected,
                     "passed_validator": len(outcome.unresolved) == 0,
                     "matches_ground_truth": outcome.fixed_resource == valid,
                     "actions_taken": len(outcome.audit),
@@ -93,14 +101,33 @@ def _aggregate(results: list[dict[str, Any]], total_duration_ms: int) -> dict[st
     passed = sum(1 for r in results if r["passed_validator"])
     matched = sum(1 for r in results if r["matches_ground_truth"])
 
-    return {
+    # Cases the validator never flagged are counted separately. They inflate
+    # `validator_pass_rate` (the resource was already accepted, so nothing
+    # had to be repaired) without telling us anything about repair quality.
+    detected = [r for r in results if r.get("validator_detected", True)]
+    undetected = total - len(detected)
+
+    summary = {
         "total": total,
         "validator_pass_rate": passed / total,
         "ground_truth_match_rate": matched / total,
         "mean_duration_ms": sum(r["duration_ms"] for r in results) // total,
         "total_duration_ms": total_duration_ms,
         "by_mutation": _by_mutation(results),
+        "undetected_by_validator": undetected,
     }
+
+    if detected and undetected:
+        # Headline rates over only the cases that posed a repair problem.
+        summary["detected_total"] = len(detected)
+        summary["detected_validator_pass_rate"] = sum(
+            1 for r in detected if r["passed_validator"]
+        ) / len(detected)
+        summary["detected_ground_truth_match_rate"] = sum(
+            1 for r in detected if r["matches_ground_truth"]
+        ) / len(detected)
+
+    return summary
 
 
 def _by_mutation(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -116,11 +143,17 @@ def _by_mutation(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for name, group in sorted(groups.items()):
         count = len(group)
-        out[name] = {
+        entry: dict[str, Any] = {
             "total": count,
             "validator_pass_rate": sum(1 for r in group if r["passed_validator"]) / count,
             "ground_truth_match_rate": sum(1 for r in group if r["matches_ground_truth"]) / count,
         }
+        # Flag a class the validator does not flag at all. Without this the
+        # row reads as a perfect score when in fact nothing was dispatched.
+        undetected = sum(1 for r in group if not r.get("validator_detected", True))
+        if undetected:
+            entry["undetected_by_validator"] = undetected
+        out[name] = entry
     return out
 
 

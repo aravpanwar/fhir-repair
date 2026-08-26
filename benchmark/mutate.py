@@ -188,9 +188,9 @@ def mutate_invariant_violation(
     resource: dict[str, Any],
     rng: random.Random,
 ) -> MutationResult | None:
-    """Violate Observation invariant obs-7.
+    """Violate Observation invariant obs-6.
 
-    obs-7 states that `dataAbsentReason` may only be present when no value is
+    obs-6 states that `dataAbsentReason` may only be present when no value is
     present. Adding it next to an existing `valueQuantity` breaks the
     invariant while keeping the resource well-formed JSON. The fix is to
     drop the added field, so the ground truth is the pre-mutation resource.
@@ -204,7 +204,7 @@ def mutate_invariant_violation(
     out["dataAbsentReason"] = copy.deepcopy(_DATA_ABSENT_REASON)
     return MutationResult(
         resource=out,
-        description="invariant-obs7-value-and-absent",
+        description="invariant-obs6-value-and-absent",
         location=f"{resource['resourceType']}.dataAbsentReason",
         original_value=None,
     )
@@ -224,7 +224,21 @@ def mutate_telecom_format(
     resource: dict[str, Any],
     rng: random.Random,
 ) -> MutationResult | None:
-    """Prepend a redundant scheme prefix to a ContactPoint value."""
+    """Prepend a redundant scheme prefix to a ContactPoint value.
+
+    Note that base R4 does not reject the result. `ContactPoint.value` is a
+    plain string with no regex constraint, so `tel:555-0100` is structurally
+    valid and HAPI 7.4.0 reports no error for it. The repair this pairs with
+    (`deterministic.normalize_telecom`) is therefore a canonicalization, not
+    a validation fix, and it only runs when something does flag the field: a
+    profile that constrains `ContactPoint.value`, or a stricter validator.
+
+    The mutation is kept because the input is realistic, legacy feeds really
+    do emit `tel:`-prefixed numbers, but it is marked `validator_detects`
+    False so the benchmark does not report a score that looks like a repair
+    when nothing was dispatched. See `benchmark/run.py` for how that is
+    handled and RESULTS.md for the reasoning.
+    """
     telecom = resource.get("telecom")
     if not isinstance(telecom, list) or not telecom:
         return None

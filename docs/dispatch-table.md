@@ -43,17 +43,35 @@ strategies:
   unexpected-array: deterministic.unwrap_singleton
   invalid-code-binding: llm.suggest_terminology_match
   missing-required-element: refuse
-  invariant-failed: llm.resolve_invariant
   unknown-error: llm
 ```
+
+Note that the codes above are illustrative. HAPI 7.4.0 emits the bare FHIR
+issue code `processing` for most value-level problems, with the specifics in
+the diagnostics text, which is why the shipped
+[../examples/repair-config.yaml](../examples/repair-config.yaml) routes
+`processing` through a chain instead of mapping fine-grained codes. Check
+what your validator actually returns before adding an entry: a key that never
+matches is silently dead.
 
 ## Removal-only strategies
 
 Most strategies replace the value at the error path. `llm.resolve_invariant`
-is different: it may only *remove* the flagged element. Invariants constrain
-several elements at once, so the repair is a choice about which element to
-drop rather than a rewrite, and restricting the strategy to removal means it
-cannot introduce clinical content that was not in the input.
+is different: it may only *remove* an element, and it names that element
+itself. Invariants constrain several elements at once, so the repair is a
+choice about which element to drop rather than a rewrite, and restricting the
+strategy to removal means it cannot introduce clinical content that was not
+in the input.
+
+The element the model names is checked against the resource before anything
+is deleted, and structural elements (`resourceType`, `id`, `meta`,
+`implicitRules`) are refused outright.
+
+HAPI reports an invariant failure against the resource, not the offending
+field, so the error code is `processing` and the location is a bare resource
+type. That means the strategy belongs at the end of the `processing` chain,
+not under an `invariant-failed` key, and it should come last because it
+removes data while the other strategies preserve it.
 
 Because dropping submitted data is still a change to existing content, it
 requires `allow_change_existing_clinical_value`, which is denied by default.

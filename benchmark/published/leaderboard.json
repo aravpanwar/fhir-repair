@@ -1,6 +1,6 @@
 [
   {
-    "label": "deterministic only, corpus A (100 Synthea resources)",
+    "label": "deterministic only (no LLM)",
     "model": null,
     "prompt_version": "v1",
     "dispatch_version": "1.0.0",
@@ -50,6 +50,118 @@
         "ground_truth_match_rate": 0.0
       }
     },
-    "recorded_at": "2026-08-25T10:12:22Z"
+    "recorded_at": "2026-08-25T18:41:41Z"
+  },
+  {
+    "label": "deepseek-v4-flash",
+    "model": "deepseek-v4-flash",
+    "prompt_version": "v1",
+    "dispatch_version": "1.0.0",
+    "total": 326,
+    "validator_pass_rate": 0.8742331288343558,
+    "ground_truth_match_rate": 0.6257668711656442,
+    "mean_duration_ms": 6606,
+    "by_mutation": {
+      "date_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0,
+        "undetected_by_validator": 4
+      },
+      "decimal_format": {
+        "total": 13,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "identifier_system": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "invalid_code_binding": {
+        "total": 40,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 0.95
+      },
+      "invariant_violation": {
+        "total": 13,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "missing_required": {
+        "total": 100,
+        "validator_pass_rate": 0.59,
+        "ground_truth_match_rate": 0.0,
+        "undetected_by_validator": 59
+      },
+      "singleton_wrap": {
+        "total": 100,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "telecom_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 0.0,
+        "undetected_by_validator": 20
+      }
+    },
+    "recorded_at": "2026-08-25T18:41:41Z"
+  },
+  {
+    "label": "deepseek-v4-pro",
+    "model": "deepseek-v4-pro",
+    "prompt_version": "v1",
+    "dispatch_version": "1.0.0",
+    "total": 326,
+    "validator_pass_rate": 0.8742331288343558,
+    "ground_truth_match_rate": 0.6288343558282209,
+    "mean_duration_ms": 10245,
+    "by_mutation": {
+      "date_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0,
+        "undetected_by_validator": 4
+      },
+      "decimal_format": {
+        "total": 13,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 0.9230769230769231
+      },
+      "identifier_system": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "invalid_code_binding": {
+        "total": 40,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "invariant_violation": {
+        "total": 13,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "missing_required": {
+        "total": 100,
+        "validator_pass_rate": 0.59,
+        "ground_truth_match_rate": 0.0,
+        "undetected_by_validator": 59
+      },
+      "singleton_wrap": {
+        "total": 100,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 1.0
+      },
+      "telecom_format": {
+        "total": 20,
+        "validator_pass_rate": 1.0,
+        "ground_truth_match_rate": 0.0,
+        "undetected_by_validator": 20
+      }
+    },
+    "recorded_at": "2026-08-25T18:41:41Z"
   }
 ]

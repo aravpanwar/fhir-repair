@@ -10,12 +10,19 @@ from __future__ import annotations
 from benchmark import run
 
 
-def _result(mutation: str, passed: bool, matched: bool, duration_ms: int = 10) -> dict:
+def _result(
+    mutation: str,
+    passed: bool,
+    matched: bool,
+    duration_ms: int = 10,
+    detected: bool = True,
+) -> dict:
     return {
         "mutation": mutation,
         "passed_validator": passed,
         "matches_ground_truth": matched,
         "duration_ms": duration_ms,
+        "validator_detected": detected,
     }
 
 
@@ -49,6 +56,43 @@ def test_aggregate_groups_by_mutation():
     assert by_mutation["date_format"]["validator_pass_rate"] == 0.5
     assert by_mutation["telecom_format"]["validator_pass_rate"] == 1.0
     assert by_mutation["telecom_format"]["ground_truth_match_rate"] == 1.0
+
+
+def test_aggregate_counts_undetected_cases():
+    """A mutation the validator accepts is not a repair the tool made."""
+    results = [
+        _result("date_format", True, True),
+        _result("telecom_format", True, False, detected=False),
+        _result("telecom_format", True, False, detected=False),
+    ]
+    summary = run._aggregate(results, 0)
+
+    assert summary["undetected_by_validator"] == 2
+    # Blended rate still counts everything, so it looks strong.
+    assert summary["validator_pass_rate"] == 1.0
+    # Restricted to cases that actually posed a problem, it is honest.
+    assert summary["detected_total"] == 1
+    assert summary["detected_ground_truth_match_rate"] == 1.0
+
+
+def test_aggregate_flags_undetected_class_in_breakdown():
+    results = [
+        _result("telecom_format", True, False, detected=False),
+        _result("date_format", True, True),
+    ]
+    by_mutation = run._aggregate(results, 0)["by_mutation"]
+
+    assert by_mutation["telecom_format"]["undetected_by_validator"] == 1
+    # Classes the validator does flag carry no such marker.
+    assert "undetected_by_validator" not in by_mutation["date_format"]
+
+
+def test_aggregate_omits_detected_rates_when_all_detected():
+    """No second set of numbers when there is nothing to separate out."""
+    summary = run._aggregate([_result("date_format", True, True)], 0)
+
+    assert summary["undetected_by_validator"] == 0
+    assert "detected_validator_pass_rate" not in summary
 
 
 def _payload(model: str, pass_rate: float) -> dict:

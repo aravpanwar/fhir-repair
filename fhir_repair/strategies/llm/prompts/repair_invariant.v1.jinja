@@ -1,24 +1,18 @@
 A FHIR R4 resource failed an invariant constraint.
 
 Validator message: {{ error.message }}
-Flagged path: {{ error.location }}
+Reported at: {{ error.location }}
 
-Value currently at that path: {{ current_value | tojson }}
-
-{% if spec_excerpt -%}
-Relevant spec excerpt (invariant definition):
-{{ spec_excerpt }}
-{% endif -%}
-
+The invariant names the elements that conflict. Removable top-level elements
+present on this resource:
+{% for name in candidates %}  - {{ name }}
+{% endfor %}
 Full resource:
 {{ resource }}
 
-Task: decide whether removing the element at the flagged path resolves the
-invariant. Removal is the only repair available to you.
-
-Answer {"action": "remove"} if the flagged element is redundant with, or
-contradicted by, other content in the resource. Answer {"action": "none"} if
-removing it would discard a clinical assertion, or if another element is the
-one that should have been dropped, or if you are not confident.
+Task: name the one element whose removal resolves the invariant. Choose the
+redundant or contradictory field rather than one carrying a clinical
+measurement. Answer {"remove": null} if no removal is safe, or if another
+repair would be needed.
 
 Respond with exactly one JSON object.

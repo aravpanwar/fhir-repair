@@ -1,8 +1,10 @@
 """Tests for the invariant repair strategy.
 
-The strategy is scoped to removal: it may drop the flagged element and
-nothing else. These tests cover the response contract, the removal itself,
-and the refusal paths that keep it from writing clinical content.
+The strategy is scoped to removal: it may drop one element and nothing else.
+HAPI reports an invariant failure against the resource rather than the
+offending field, so the model names the element and the strategy checks that
+name against the resource before deleting anything. These tests cover the
+response contract, the removal, and the refusal paths.
 """
 
 from __future__ import annotations
@@ -17,7 +19,6 @@ from fhir_repair.strategies.llm.invariant import (
     PERMISSION,
     parse_invariant_response,
 )
-from fhir_repair.strategies.llm.runner import DELETE
 from fhir_repair.strategies.registry import StrategyRegistry
 
 
@@ -41,8 +42,16 @@ class _ScriptedProvider:
         return False
 
 
+class _ExplodingProvider:
+    def complete(self, segments, **kwargs):
+        raise RuntimeError("upstream is down")
+
+    def supports_caching(self) -> bool:
+        return False
+
+
 def _observation() -> dict:
-    """An Observation violating obs-7: a value and a dataAbsentReason."""
+    """An Observation violating obs-6: a value and a dataAbsentReason."""
     return {
         "resourceType": "Observation",
         "id": "obs-1",
@@ -61,11 +70,15 @@ def _observation() -> dict:
 
 
 def _error() -> ValidationError:
+    """HAPI reports the constraint against the resource, not the field."""
     return ValidationError(
-        code="invariant-failed",
+        code="processing",
         severity="error",
-        location="Observation.dataAbsentReason",
-        message="obs-7: dataAbsentReason SHALL only be present if value[x] is not present",
+        location="Observation",
+        message=(
+            "Constraint failed: obs-6: 'dataAbsentReason SHALL only be "
+            "present if Observation.value[x] is not present'"
+        ),
     )
 
 
@@ -75,12 +88,16 @@ def _strategy(response: str):
     return registry.get(NAME)
 
 
-def test_parser_accepts_remove():
-    assert parse_invariant_response('{"action": "remove"}') is DELETE
+def test_parser_accepts_an_element_name():
+    assert parse_invariant_response('{"remove": "dataAbsentReason"}') == "dataAbsentReason"
 
 
-def test_parser_accepts_none_as_decline():
-    assert parse_invariant_response('{"action": "none"}') is None
+def test_parser_trims_whitespace():
+    assert parse_invariant_response('{"remove": " dataAbsentReason "}') == "dataAbsentReason"
+
+
+def test_parser_accepts_null_as_decline():
+    assert parse_invariant_response('{"remove": null}') is None
 
 
 def test_parser_rejects_replacement_value():
@@ -89,38 +106,45 @@ def test_parser_rejects_replacement_value():
         parse_invariant_response('{"value": {"coding": []}}')
 
 
-def test_parser_rejects_unknown_action():
+def test_parser_rejects_missing_key():
     with pytest.raises(ValueError):
-        parse_invariant_response('{"action": "rewrite"}')
+        parse_invariant_response('{"action": "remove"}')
 
 
 def test_parser_rejects_non_object():
     with pytest.raises(ValueError):
-        parse_invariant_response('"remove"')
+        parse_invariant_response('"dataAbsentReason"')
+
+
+def test_parser_rejects_empty_name():
+    with pytest.raises(ValueError):
+        parse_invariant_response('{"remove": "  "}')
 
 
 def test_registered_with_clinical_value_permission():
     """Dropping submitted data is a clinical-value change, not a reformat."""
-    strategy = _strategy('{"action": "remove"}')
+    strategy = _strategy('{"remove": "dataAbsentReason"}')
     assert strategy.permission == PERMISSION
     assert strategy.permission == "allow_change_existing_clinical_value"
 
 
-def test_remove_drops_the_flagged_element():
-    strategy = _strategy('{"action": "remove"}')
+def test_removes_the_named_element():
+    strategy = _strategy('{"remove": "dataAbsentReason"}')
     resource = _observation()
 
     action = strategy.apply(resource, _error())
 
     assert "dataAbsentReason" not in resource
+    # The clinical measurement is preserved.
     assert resource["valueQuantity"] == {"value": 72, "unit": "beats/min"}
     assert action.risk != "refused"
     assert action.removed is True
     assert action.after is None
+    assert action.llm["provider"] == "stub"
 
 
 def test_decline_leaves_resource_untouched():
-    strategy = _strategy('{"action": "none"}')
+    strategy = _strategy('{"remove": null}')
     resource = _observation()
 
     action = strategy.apply(resource, _error())
@@ -129,22 +153,57 @@ def test_decline_leaves_resource_untouched():
     assert action.risk == "refused"
 
 
-def test_remove_of_absent_path_is_refused():
-    """The model asking to drop something that is not there is not a fix."""
-    strategy = _strategy('{"action": "remove"}')
+def test_absent_element_is_refused():
+    """Never delete on an unchecked name."""
+    strategy = _strategy('{"remove": "explanation"}')
     resource = _observation()
-    del resource["dataAbsentReason"]
 
     action = strategy.apply(resource, _error())
 
     assert action.risk == "refused"
+    assert len(resource) == 6
+
+
+@pytest.mark.parametrize("protected", ["resourceType", "id", "meta"])
+def test_structural_elements_are_refused(protected):
+    """A model naming resourceType must not be able to gut the resource."""
+    resource = _observation()
+    resource["meta"] = {"versionId": "1"}
+    strategy = _strategy(f'{{"remove": "{protected}"}}')
+
+    action = strategy.apply(resource, _error())
+
+    assert action.risk == "refused"
+    assert protected in resource
 
 
 def test_unparseable_response_is_refused():
-    strategy = _strategy("sure, remove it")
+    strategy = _strategy("sure, drop dataAbsentReason")
     resource = _observation()
 
     action = strategy.apply(resource, _error())
 
     assert action.risk == "refused"
     assert "dataAbsentReason" in resource
+
+
+def test_provider_failure_is_refused():
+    registry = StrategyRegistry()
+    register_default_llm_strategies(registry, _ExplodingProvider())
+    resource = _observation()
+
+    action = registry.get(NAME).apply(resource, _error())
+
+    assert action.risk == "refused"
+    assert "dataAbsentReason" in resource
+
+
+def test_candidates_exclude_structural_elements():
+    from fhir_repair.strategies.llm.invariant import _candidate_elements
+
+    candidates = _candidate_elements(_observation())
+
+    assert "dataAbsentReason" in candidates
+    assert "valueQuantity" in candidates
+    assert "resourceType" not in candidates
+    assert "id" not in candidates
