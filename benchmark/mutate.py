@@ -7,14 +7,14 @@ benchmark scorer compares the repaired output against.
 
 Twelve classes are implemented, in two groups.
 
-The eight original study-design classes: date format, decimal format,
-singleton wrap, missing required, invalid code binding, invariant violation,
-telecom format, and identifier system.
+The eight original classes: date format, decimal format, singleton wrap,
+missing required, invalid code binding, invariant violation, telecom format,
+and identifier system.
 
-Four interpretive classes added for the error-tier study: unit mismatch,
-date precision, bad comparator, and free-text code. These corrupt a value in
-a way that is readable but not mechanically reversible, which is what
-separates the interpretive tier from the deterministic one.
+Four interpretive classes added later: unit mismatch, date precision, bad
+comparator, and free-text code. These corrupt a value in a way that is
+readable but not mechanically reversible, which is what separates the
+interpretive tier from the deterministic one.
 
 Each mutation returns None for resources it does not apply to, so the corpus
 generator simply skips inapplicable pairs.

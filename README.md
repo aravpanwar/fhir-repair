@@ -177,7 +177,6 @@ This is a v0.1 pre-release. Current capabilities:
 Deferred to later releases:
 
 - Additional LLM providers (Azure OpenAI, Vertex AI)
-- Wild-sample empirical study corpus
 - A prompt-variant sweep on the leaderboard (model comparison is published;
   prompt versions have not been varied yet)
 

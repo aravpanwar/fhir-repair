@@ -234,7 +234,7 @@ Every run records the full version provenance in `RepairResult.metadata`:
 
 Six months from now, someone can re-run a benchmark with the same versions
 and get the same numbers. Without this, the benchmark is not reproducible
-and the empirical study is not citable.
+and published results cannot be checked.
 
 ## Statelessness and no telemetry
 
