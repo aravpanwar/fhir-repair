@@ -58,6 +58,17 @@ def fake_anthropic(monkeypatch):
     return captured
 
 
+def test_default_max_tokens_leaves_room_for_thinking(fake_anthropic, monkeypatch):
+    """Thinking counts against max_tokens, so 1024 can starve the answer."""
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.anthropic import AnthropicProvider
+
+    AnthropicProvider().complete([PromptSegment(role="user", text="hi", stable=False)])
+
+    assert fake_anthropic["request"]["max_tokens"] >= 16000
+
+
 def test_temperature_is_omitted_by_default(fake_anthropic, monkeypatch):
     """The Claude 4.6+ family rejects `temperature` with a 400."""
     monkeypatch.setenv("LLM_API_KEY", "test-key")

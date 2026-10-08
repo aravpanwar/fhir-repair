@@ -92,9 +92,13 @@ class AnthropicProvider:
                 "runner must include at least one user segment."
             )
 
+        # Recent Anthropic models think by default, and thinking tokens count
+        # against `max_tokens`. A small cap can be used up before any text
+        # is written, which comes back as an empty completion and reads as
+        # a parse failure. Leave enough room for both.
         request: dict[str, Any] = {
             "model": self._model,
-            "max_tokens": kwargs.get("max_tokens", 1024),
+            "max_tokens": kwargs.get("max_tokens", 16000),
             "messages": messages,
         }
         # Only send `temperature` when the caller asked for one. The Claude
