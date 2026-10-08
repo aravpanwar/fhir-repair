@@ -176,7 +176,7 @@ This is a v0.2 pre-release. Current capabilities:
   an LLM (87.4% validator pass, 62.6% ground truth): see
   [RESULTS.md](RESULTS.md)
 
-Deferred to later releases:
+Not implemented:
 
 - Additional LLM providers (Azure OpenAI, Vertex AI)
 - A prompt-variant sweep on the leaderboard (model comparison is published;
