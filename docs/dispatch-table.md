@@ -112,6 +112,11 @@ summaries, and add explicit mappings for codes you see frequently.
 
 ## Adding new strategies
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for the strategy contribution
-guide. Once a strategy is registered, it can be referenced from a dispatch
-table entry by its `NAME` constant.
+A deterministic strategy is a module under
+`fhir_repair/strategies/deterministic/` that exports `apply()` plus `NAME`,
+`VERSION`, `PERMISSION` and `RISK` constants. It takes
+`(resource, error)`, returns a `RepairAction`, does no IO, and refuses
+cleanly (`risk="refused"` with a reason in `explanation`) when its
+preconditions are not met. `date.py` is a worked example. Once a strategy is
+registered, it can be referenced from a dispatch table entry by its `NAME`
+constant.

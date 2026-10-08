@@ -191,11 +191,6 @@ requests, fixtures, benchmark corpus). See
 the tool inside a HIPAA-compliant deployment. The project itself is not, and
 makes no claim to be, HIPAA-certified.
 
-## Contributing
-
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
-scope rules, the PHI ban, and the new-strategy PR template.
-
 ## License
 
 [Apache License 2.0](LICENSE).

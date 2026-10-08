@@ -128,5 +128,5 @@ You should see no traffic.
 
 If you discover behavior in `fhir-repair` that is inconsistent with this
 document (network calls to unexpected endpoints, audit log gaps, persistence
-that should not exist), report it as a security issue per the procedure in
-`CONTRIBUTING.md`.
+that should not exist), report it privately to the maintainer as a security
+issue rather than in a public issue.
