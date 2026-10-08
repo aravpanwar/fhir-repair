@@ -16,8 +16,8 @@ and response shape across model families, so this adapter does not need a
 per-family branch. Converse also carries prompt caching via `cachePoint`
 blocks, which is how stable segments are marked.
 
-`boto3` is an optional dependency; install with
-`pip install "fhir-repair[bedrock]"`.
+`boto3` is an optional dependency; install the
+`bedrock` extra (see Installation in the README).
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ class BedrockProvider:
         except ImportError as exc:
             raise ImportError(
                 "BedrockProvider requires the optional `boto3` package. "
-                "Install with: pip install 'fhir-repair[bedrock]'"
+                "Install the `bedrock` extra; see Installation in the README."
             ) from exc
 
         resolved_region = (

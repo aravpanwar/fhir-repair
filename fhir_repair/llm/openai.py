@@ -6,9 +6,9 @@ per-segment markup, so this adapter ignores the `stable` hint on incoming
 segments and reports `supports_caching()` as False: it applies no caching
 primitive of its own.
 
-The `openai` package is an optional dependency; install with
-`pip install "fhir-repair[openai]"`. Set a private or Azure-style endpoint
-with the `endpoint` argument (mapped to the SDK `base_url`).
+The `openai` package is an optional dependency; install the `openai` extra
+(see Installation in the README). Set a private or Azure-style endpoint with
+the `endpoint` argument (mapped to the SDK `base_url`).
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ class OpenAIProvider:
         except ImportError as exc:
             raise ImportError(
                 "OpenAIProvider requires the optional `openai` package. "
-                "Install with: pip install 'fhir-repair[openai]'"
+                "Install the `openai` extra; see Installation in the README."
             ) from exc
 
         resolved_key = api_key or os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY")

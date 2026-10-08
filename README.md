@@ -41,16 +41,18 @@ See [docs/architecture.md](docs/architecture.md) for the full flow.
 
 ## Installation
 
+`fhir-repair` is not published on PyPI. Install it from GitHub:
+
 ```bash
-pip install fhir-repair
+pip install "fhir-repair @ git+https://github.com/aravpanwar/fhir-repair@v0.2.0"
 ```
 
-For an LLM provider:
+For an LLM provider, name its extra in the same URL:
 
 ```bash
-pip install "fhir-repair[anthropic]"
-pip install "fhir-repair[openai]"
-pip install "fhir-repair[bedrock]"
+pip install "fhir-repair[anthropic] @ git+https://github.com/aravpanwar/fhir-repair@v0.2.0"
+pip install "fhir-repair[openai] @ git+https://github.com/aravpanwar/fhir-repair@v0.2.0"
+pip install "fhir-repair[bedrock] @ git+https://github.com/aravpanwar/fhir-repair@v0.2.0"
 ```
 
 Self-hosted servers that speak the OpenAI protocol (vLLM, Ollama, TGI) use
@@ -94,7 +96,7 @@ fhir-repair fix patient.json --config repair-config.yaml --out fixed.json
 HTTP service (optional, self-hosted only):
 
 ```bash
-pip install "fhir-repair[service]"
+pip install "fhir-repair[service] @ git+https://github.com/aravpanwar/fhir-repair@v0.2.0"
 uvicorn fhir_repair.service:app --host 0.0.0.0 --port 8000
 
 curl -X POST localhost:8000/repair \

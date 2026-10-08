@@ -5,7 +5,7 @@ service rather than a CLI or library. It is opt-in and self-hosted only:
 the project runs no hosted service and accepts no PHI on any project
 surface. See DEPLOYMENT-COMPLIANCE.md before running it against real data.
 
-Install the dependencies with `pip install "fhir-repair[service]"` and run:
+Install the `service` extra (see Installation in the README) and run:
 
     uvicorn fhir_repair.service:app --host 0.0.0.0 --port 8000
 

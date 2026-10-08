@@ -5,8 +5,8 @@ caching syntax. Stable PromptSegments become text blocks tagged with
 `cache_control: {"type": "ephemeral"}`, which engages Anthropic's prompt
 cache (~10% input cost on cache hit, 5-minute TTL).
 
-The `anthropic` package is an optional dependency; install with
-`pip install "fhir-repair[anthropic]"`.
+The `anthropic` package is an optional dependency; install the
+`anthropic` extra (see Installation in the README).
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class AnthropicProvider:
         except ImportError as exc:
             raise ImportError(
                 "AnthropicProvider requires the optional `anthropic` package. "
-                "Install with: pip install 'fhir-repair[anthropic]'"
+                "Install the `anthropic` extra; see Installation in the README."
             ) from exc
 
         resolved_key = (

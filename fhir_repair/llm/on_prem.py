@@ -16,8 +16,8 @@ rather than a flag:
     authentication inside a trusted network; a placeholder is sent because
     the SDK requires the header to be present.
 
-`openai` is an optional dependency; install with
-`pip install "fhir-repair[openai]"`.
+`openai` is an optional dependency; install the
+`openai` extra (see Installation in the README).
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ class OnPremProvider:
             raise ImportError(
                 "OnPremProvider requires the optional `openai` package, which "
                 "provides the client for OpenAI-compatible servers. "
-                "Install with: pip install 'fhir-repair[openai]'"
+                "Install the `openai` extra; see Installation in the README."
             ) from exc
 
         resolved_endpoint = endpoint or os.environ.get("LLM_ENDPOINT")
