@@ -14,7 +14,7 @@ numbers.
 | Item | Value |
 |---|---|
 | Corpus | [benchmark/corpus/synthea_full/](benchmark/corpus/synthea_full/), 100 Synthea v3.3.0 resources, seed 12345 |
-| Cases | 326 mutated resources across all 8 mutation classes |
+| Cases | 326 mutated resources across the 8 original classes; 410 across all 12 (see [The 12-class runs](#the-12-class-runs)) |
 | Validator | HAPI FHIR 7.4.0 |
 | FHIR version | 4.0.1 |
 | Dispatch version | 1.0.0 |
@@ -89,6 +89,60 @@ than a different code path.
 Read single-case differences between the two model runs as noise. The class
 level is where the comparison means something.
 
+## The 12-class runs
+
+Four more mutation classes were added later. Each one corrupts a value in a
+way a reader can interpret but no pure function can reverse, and each one
+raises a real HAPI error:
+
+- `unit_mismatch`: a UCUM code replaced with its spelled-out unit name.
+- `date_precision`: a `date` given a time component.
+- `bad_comparator`: `~` in `Quantity.comparator`, which is not in the bound
+  ValueSet.
+- `freetext_code`: a bound code replaced with a free-text rendering of it.
+
+Both runs below use the same corpus and validator as the runs above. The
+files are `corpus-a-12class-*.json` in
+[benchmark/published/](benchmark/published/).
+
+| Run | Validator pass | Ground truth | Detected only (validator / ground truth) | Mean latency |
+|---|---:|---:|---:|---:|
+| Deterministic only | 56.6% | 37.3% | 45.6% / 45.6% | 314 ms |
+| + DeepSeek V4 Flash | **84.4%** | **64.9%** | **80.4% / 80.1%** | 3.1 s |
+
+410 cases, 327 of them detected by the validator.
+
+| New class | n | Deterministic | Flash |
+|---|---:|---:|---:|
+| `date_precision` | 20 | 0.00 / 0.00 | 1.00 / 1.00 |
+| `freetext_code` | 40 | 0.00 / 0.00 | 1.00 / 1.00 |
+| `bad_comparator` | 13 | 0.00 / 0.00 | 0.08 / 0.00 |
+| `unit_mismatch` | 11 | 0.00 / 0.00 | 0.00 / 0.00 |
+
+The original eight classes score the same as in the 8-class runs, apart
+from `invalid_code_binding`, where Flash reached 1.00 / 1.00 this time.
+That is the run-to-run noise described above.
+
+The new classes split two ways:
+
+- Flash solves `date_precision` and `freetext_code` outright. There is
+  exactly one sensible reading of the corrupted value.
+- `unit_mismatch` and `bad_comparator` stay unsolved. A correct repair
+  needs an authority for valid units and comparators, which is a
+  terminology service rather than a better prompt.
+
+### The tier split depends on the mutation mix
+
+Over detected errors, the original 8 classes split 61% / 22% / 17% into
+deterministic / interpretive / must-refuse. Adding these four classes moved
+the split to 46% / 42% / 13%. The tool, the corpus and the validator did
+not change.
+
+The proportions describe the benchmark, not FHIR in general. Read the
+per-class results as the finding: which tier an error class falls into, and
+that each tier needs different machinery. Treat the aggregate split as
+illustrative only.
+
 ## Reading the flat rows
 
 Neither `missing_required` nor `telecom_format` is a strategy failing at
@@ -137,6 +191,10 @@ python -m benchmark.run \
   --out benchmark/results.json \
   --hapi-url http://localhost:8080/fhir
 ```
+
+The mutator now generates all 12 classes, so this produces the 410-case
+corpus behind the 12-class runs. The 8-class numbers are the subset without
+the four newer classes.
 
 For an LLM run, route the interpretive classes to LLM strategies (append
 `llm.suggest_terminology_match` and `llm.resolve_invariant` to the
