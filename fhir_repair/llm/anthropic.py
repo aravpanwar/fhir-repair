@@ -101,10 +101,9 @@ class AnthropicProvider:
             "max_tokens": kwargs.get("max_tokens", 16000),
             "messages": messages,
         }
-        # Only send `temperature` when the caller asked for one. The Claude
-        # 4.6+ family (Sonnet 5, Opus 5, ...) removed sampling parameters and
-        # rejects `temperature` with a 400, and these models default to
-        # deterministic-enough behaviour for repair without it.
+        # Only send `temperature` when the caller asked for one. Opus 4.7 and
+        # later, and Sonnet 5 and later, reject it with a 400. Older models
+        # still accept it, so a caller that needs it can pass it explicitly.
         if "temperature" in kwargs:
             request["temperature"] = kwargs["temperature"]
         if system_blocks:

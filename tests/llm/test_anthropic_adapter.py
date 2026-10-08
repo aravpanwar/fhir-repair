@@ -70,7 +70,7 @@ def test_default_max_tokens_leaves_room_for_thinking(fake_anthropic, monkeypatch
 
 
 def test_temperature_is_omitted_by_default(fake_anthropic, monkeypatch):
-    """The Claude 4.6+ family rejects `temperature` with a 400."""
+    """Opus 4.7+ and Sonnet 5+ reject `temperature` with a 400."""
     monkeypatch.setenv("LLM_API_KEY", "test-key")
 
     from fhir_repair.llm.anthropic import AnthropicProvider
