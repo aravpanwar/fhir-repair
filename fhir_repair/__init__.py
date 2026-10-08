@@ -13,7 +13,7 @@ from fhir_repair.core.models import (
 )
 from fhir_repair.core.repairer import Repairer
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "HallucinationGuard",

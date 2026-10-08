@@ -18,8 +18,8 @@ authors:
 repository-code: "https://github.com/aravpanwar/fhir-repair"
 url: "https://github.com/aravpanwar/fhir-repair"
 license: Apache-2.0
-version: 0.1.0
-date-released: "2026-04-27"
+version: 0.2.0
+date-released: "2026-10-08"
 keywords:
   - FHIR
   - HL7

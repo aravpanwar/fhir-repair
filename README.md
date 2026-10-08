@@ -1,7 +1,7 @@
 # fhir-repair
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Status: Pre-release (v0.1)](https://img.shields.io/badge/status-pre--release-orange.svg)](#project-status)
+[![Status: Pre-release (v0.2)](https://img.shields.io/badge/status-pre--release-orange.svg)](#project-status)
 
 A toolkit that takes broken FHIR R4 resources and produces validator-passing
 fixed versions, using a deterministic-first, LLM-fallback approach with
@@ -153,7 +153,7 @@ for detail.
 
 ## Project status
 
-This is a v0.1 pre-release. Current capabilities:
+This is a v0.2 pre-release. Current capabilities:
 
 - 6 deterministic strategies: `normalize_date`, `normalize_decimal`,
   `unwrap_singleton`, `normalize_telecom`, `normalize_codeable_concept`,
@@ -168,7 +168,7 @@ This is a v0.1 pre-release. Current capabilities:
 - Optional self-hosted HTTP service (FastAPI)
 - Starter benchmark corpus (6 hand-curated R4 resources) plus the full
   100-resource Synthea corpus, both committed
-- Benchmark mutation harness with all 8 study-design mutation classes
+- Benchmark mutation harness with 12 mutation classes
 - Leaderboard renderer with cumulative runs and per-mutation breakdown
 - Published benchmark runs on the full corpus, deterministic-only and with
   an LLM (87.4% validator pass, 62.6% ground truth): see
