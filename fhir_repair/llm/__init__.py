@@ -45,7 +45,7 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
         # provider-specific defaults.
         return AnthropicProvider(
             api_key=config.api_key or None,
-            model=config.model or "claude-sonnet-5",
+            model=config.model or "claude-sonnet-5-5",
             endpoint=config.endpoint or None,
         )
 

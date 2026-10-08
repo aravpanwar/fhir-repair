@@ -25,7 +25,7 @@ class AnthropicProvider:
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "claude-sonnet-5",
+        model: str = "claude-sonnet-5-5",
         endpoint: str | None = None,
     ) -> None:
         # Imported lazily so the package can be loaded on systems without
