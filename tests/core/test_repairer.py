@@ -6,6 +6,7 @@ bookkeeping (rollback, unresolved accounting) without a HAPI server.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from typing import Any
 
@@ -137,7 +138,7 @@ def test_nested_fix_that_regresses_is_undone(tmp_path):
     result = repairer.repair(_gustav())
 
     assert result.fixed_resource["name"][0]["family"] == "victor"
-    assert {action.risk for action in result.audit} == {"refused"}
+    assert [action.risk for action in result.audit] == ["refused"]
     assert "regression at Patient.name[0].family" in result.audit[0].explanation
 
 
@@ -197,6 +198,74 @@ def test_rolled_back_removal_is_replayed_as_a_deletion(tmp_path):
     assert result.fixed_resource["gender"] == "M"
     risks = {action.strategy: action.risk for action in result.audit}
     assert risks == {"stub.remove": "low", "stub.regress": "refused"}
+
+
+def test_one_fix_costs_two_validator_calls(tmp_path):
+    # One to find the error, one to confirm the fix. Re-validating state
+    # that was just validated doubled the HAPI round trips.
+    def rule(resource: dict[str, Any]) -> list[ValidationError]:
+        return [_error("gender", "Patient.gender")] if resource["gender"] == "M" else []
+
+    validator = _RuleValidator(rule)
+    stub = _Stub("stub.fix", "Patient.gender", "male")
+    result = _repairer(tmp_path, validator, {"gender": "stub.fix"}, stub).repair(_gustav())
+
+    assert result.fixed_resource["gender"] == "male"
+    assert result.unresolved == []
+    assert validator.calls == 2
+
+
+def test_unfixable_error_is_attempted_once(tmp_path):
+    # The stuck detector only compared attempts after the first, so an
+    # error nothing could fix ran its whole strategy chain twice, which
+    # for an LLM strategy is a second paid call.
+    validator = _ConstantValidator([_error("mapped-code", "Patient.a")])
+    repairer = _repairer(tmp_path, validator, {"mapped-code": "stub.refuse"}, _RefusingStrategy())
+
+    result = repairer.repair(_gustav())
+
+    assert len(result.audit) == 1
+    assert validator.calls == 1
+
+
+def test_error_cleared_by_another_fix_is_not_unresolved(tmp_path):
+    # The unmapped error is a knock-on effect of the gender error and goes
+    # away with it, so the resource comes back valid.
+    def rule(resource: dict[str, Any]) -> list[ValidationError]:
+        if resource["gender"] != "M":
+            return []
+        return [_error("gender", "Patient.gender"), _error("knock-on", "Patient")]
+
+    stub = _Stub("stub.fix", "Patient.gender", "male")
+    result = _repairer(tmp_path, _RuleValidator(rule), {"gender": "stub.fix"}, stub).repair(
+        _gustav()
+    )
+
+    assert result.unresolved == []
+
+
+def test_summary_counts_fixed_errors_not_a_difference(tmp_path):
+    # Fixing one error uncovers two more. `fixed` used to be computed as
+    # total minus unresolved, which came out as -1.
+    def rule(resource: dict[str, Any]) -> list[ValidationError]:
+        if resource["gender"] == "M":
+            return [_error("gender", "Patient.gender")]
+        return [_error("a", "Patient.name"), _error("b", "Patient.birthDate")]
+
+    stub = _Stub("stub.fix", "Patient.gender", "male")
+    result = _repairer(tmp_path, _RuleValidator(rule), {"gender": "stub.fix"}, stub).repair(
+        _gustav()
+    )
+
+    (log,) = tmp_path.glob("*.audit.jsonl")
+    summary = json.loads(log.read_text(encoding="utf-8").splitlines()[-1])["summary"]
+    assert summary == {
+        "total_errors": 1,
+        "fixed": 1,
+        "unresolved": 2,
+        "duration_ms": summary["duration_ms"],
+    }
+    assert len(result.unresolved) == 2
 
 
 def test_audit_filenames_do_not_collide_within_one_second(tmp_path):

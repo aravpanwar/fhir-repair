@@ -119,70 +119,45 @@ class Repairer:
         start = time.perf_counter()
         working = snapshot(resource)
         audit: list[RepairAction] = []
-        unresolved: list[ValidationError] = []
 
         # Validate once up front. If the resource is already valid, return
         # without touching the audit file.
-        errors = self._validator.validate(working, self._config.target_profile)
+        errors = self._validate(working)
         if not errors:
-            duration_ms = int((time.perf_counter() - start) * 1000)
             return RepairResult(
                 fixed_resource=working,
                 audit=[],
                 unresolved=[],
-                duration_ms=duration_ms,
+                duration_ms=_elapsed_ms(start),
                 metadata=self._metadata(),
             )
 
-        total_errors = len(errors)
-        attempts = self._config.limits.max_attempts
-        prev_errors: list[ValidationError] = []
-
+        initial = errors
         with self._open_audit(working) as audit_writer:
-            for attempt in range(attempts):
+            for _ in range(self._config.limits.max_attempts):
                 plan = build_plan(errors, self._resolver)
-
-                if not plan.batches and not plan.unmapped:
-                    # Nothing left to do.
+                if not plan.batches:
                     break
 
-                actions = self._run_plan(working, plan, audit_writer)
+                actions, after = self._run_plan(working, plan, errors, audit_writer)
                 audit.extend(actions)
 
-                # Anything the resolver could not map is unresolved unless
-                # a later attempt picks it up (it will not, but the loop
-                # structure makes that explicit).
-                unresolved.extend(plan.unmapped)
-
-                # Re-validate. If clean, we are done.
-                errors = self._validator.validate(working, self._config.target_profile)
-                if not errors:
+                # An attempt that leaves the error set as it found it would
+                # make the same moves again, so stop rather than spend another
+                # round of strategy and validator calls on it.
+                stuck = is_stuck(errors, after)
+                errors = after
+                if not errors or stuck:
                     break
 
-                # Stuck detector: if the error set has not changed, give up.
-                if attempt > 0 and is_stuck(prev_errors, errors):
-                    break
-                prev_errors = errors
-
-            else:
-                # The for-loop exhausted attempts without breaking. Anything
-                # still in `errors` becomes unresolved.
-                unresolved.extend(errors)
-
-            # Anything still failing validation at exit becomes unresolved.
-            # Extend unconditionally: when the loop exits via the stuck
-            # detector with unmapped errors already collected, the guard
-            # `not unresolved` would otherwise drop the mapped-but-unfixed
-            # errors. `_dedupe_errors` removes any overlap.
-            if errors:
-                unresolved.extend(errors)
-
-            unresolved = _dedupe_errors(unresolved)
-            duration_ms = int((time.perf_counter() - start) * 1000)
-
+            # `errors` always describes the resource as returned, so it is
+            # the unresolved list: an error that a later fix cleared up is
+            # not reported, and one a fix uncovered is.
+            unresolved = _dedupe_errors(errors)
+            duration_ms = _elapsed_ms(start)
             audit_writer.write_summary(
-                total_errors=total_errors,
-                fixed=total_errors - len(unresolved),
+                total_errors=len(initial),
+                fixed=_count_fixed(initial, unresolved),
                 unresolved=len(unresolved),
                 duration_ms=duration_ms,
             )
@@ -199,43 +174,49 @@ class Repairer:
         self,
         resource: dict[str, Any],
         plan: DispatchPlan,
+        errors: list[ValidationError],
         audit_writer: AuditWriter,
-    ) -> list[RepairAction]:
+    ) -> tuple[list[RepairAction], list[ValidationError]]:
         """Execute a plan against `resource`, mutating it in place.
 
-        Each batch runs in declared order. After each batch, we re-validate
-        and check for regressions. Regressions trigger a rollback of the
-        batch and a sequential retry.
+        `errors` must describe `resource` as it is on entry. Each batch runs
+        in declared order and is re-validated once; a regression rolls the
+        batch back and replays it one action at a time. Returns the actions
+        taken and the errors on the resource afterwards.
         """
         all_actions: list[RepairAction] = []
 
         for batch in plan.batches:
             before_state = snapshot(resource)
-            before_errors = self._validator.validate(resource, self._config.target_profile)
-
             actions = [self._invoke_chain(chain, resource, error) for chain, error in batch]
             touched = {action.written_path for action in actions if action.risk != "refused"}
 
-            after_errors = self._validator.validate(resource, self._config.target_profile)
-            if detect_regressions(before_errors, after_errors, touched):
-                _restore(resource, before_state)
-                actions = self._replay_one_at_a_time(resource, actions, before_errors)
+            # Strategies only change the resource when they do not refuse,
+            # so a batch that wrote nothing leaves `errors` accurate and
+            # needs no validator call.
+            if touched:
+                after = self._validate(resource)
+                if detect_regressions(errors, after, touched):
+                    _restore(resource, before_state)
+                    actions, after = self._replay_one_at_a_time(resource, actions, errors)
+                errors = after
 
             for action in actions:
                 audit_writer.write_action(action)
             all_actions.extend(actions)
 
-        return all_actions
+        return all_actions, errors
 
     def _replay_one_at_a_time(
         self,
         resource: dict[str, Any],
         actions: list[RepairAction],
         errors: list[ValidationError],
-    ) -> list[RepairAction]:
+    ) -> tuple[list[RepairAction], list[ValidationError]]:
         """Re-apply a rolled-back batch one action at a time.
 
-        `errors` must describe `resource` as it is on entry. Each action is
+        `errors` must describe `resource` as it is on entry; the errors
+        after the replay are returned with the actions. Each action is
         replayed from its recorded result rather than by running the
         strategy again: an LLM strategy would spend a second call and could
         answer differently from what the audit log records. An action that
@@ -257,7 +238,7 @@ class Repairer:
                 replayed.append(_refuse_after_rollback(action, f"could not be replayed: {exc}"))
                 continue
 
-            after = self._validator.validate(resource, self._config.target_profile)
+            after = self._validate(resource)
             if detect_regressions(errors, after, {action.written_path}):
                 _restore(resource, checkpoint)
                 replayed.append(
@@ -266,7 +247,10 @@ class Repairer:
             else:
                 errors = after
                 replayed.append(action)
-        return replayed
+        return replayed, errors
+
+    def _validate(self, resource: dict[str, Any]) -> list[ValidationError]:
+        return self._validator.validate(resource, self._config.target_profile)
 
     def _invoke_chain(
         self,
@@ -390,6 +374,20 @@ def _refuse_after_rollback(action: RepairAction, reason: str) -> RepairAction:
         removed=False,
         explanation=f"Refused after rollback: {reason}.",
     )
+
+
+def _elapsed_ms(start: float) -> int:
+    return int((time.perf_counter() - start) * 1000)
+
+
+def _count_fixed(initial: list[ValidationError], remaining: list[ValidationError]) -> int:
+    """How many of the input's errors are gone from the output.
+
+    Counted per error rather than as `initial - remaining`, which goes
+    negative when a fix uncovers more errors than it cleared.
+    """
+    left = {(e.code, e.location) for e in remaining}
+    return len({(e.code, e.location) for e in initial} - left)
 
 
 def _dedupe_errors(errors: list[ValidationError]) -> list[ValidationError]:
