@@ -14,6 +14,7 @@ import pytest
 
 from fhir_repair.core.config import LimitsConfig, LoggingConfig, RepairConfig
 from fhir_repair.core.fhirpath import delete_at_path, get_at_path, set_at_path
+from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, ValidationError
 from fhir_repair.core.repairer import Repairer
 from fhir_repair.strategies.base import refused
@@ -92,7 +93,13 @@ def _error(code: str, location: str, message: str = "") -> ValidationError:
     return ValidationError(code, "error", location, message or code)
 
 
-def _repairer(tmp_path, validator, strategies: dict[str, str], *stubs: Any) -> Repairer:
+def _repairer(
+    tmp_path,
+    validator,
+    strategies: dict[str, Any],
+    *stubs: Any,
+    guard: HallucinationGuard | None = None,
+) -> Repairer:
     registry = StrategyRegistry()
     registry.register_module(identifier)
     for stub in stubs:
@@ -101,7 +108,7 @@ def _repairer(tmp_path, validator, strategies: dict[str, str], *stubs: Any) -> R
         strategies=strategies,
         logging=LoggingConfig(audit_destination=str(tmp_path)),
     )
-    return Repairer(validator=validator, registry=registry, config=config)
+    return Repairer(validator=validator, registry=registry, config=config, guard=guard)
 
 
 def _gustav() -> dict[str, Any]:
@@ -200,6 +207,55 @@ def test_rolled_back_removal_is_replayed_as_a_deletion(tmp_path):
     assert result.fixed_resource["gender"] == "M"
     risks = {action.strategy: action.risk for action in result.audit}
     assert risks == {"stub.remove": "low", "stub.regress": "refused"}
+
+
+def test_replay_that_no_longer_applies_becomes_a_refusal(tmp_path):
+    # Two fixes in one batch remove the same element. Once the first is
+    # replayed there is nothing left for the second, which is refused
+    # rather than raising. A refusal already in the batch passes through.
+    def rule(resource: dict[str, Any]) -> list[ValidationError]:
+        errors = _gender_regresses(resource)
+        if "deceasedBoolean" in resource:
+            errors += [_error("first", "Patient"), _error("second", "Patient")]
+        if resource.get("gender") == "M":
+            errors += [_error("gender", "Patient"), _error("other", "Patient")]
+        return errors
+
+    stubs = [
+        _Stub("stub.first", "Patient.deceasedBoolean", remove=True),
+        _Stub("stub.second", "Patient.deceasedBoolean", remove=True),
+        _Stub("stub.regress", "Patient.gender", "REGRESS"),
+        _RefusingStrategy(),
+    ]
+    strategies = {
+        "first": "stub.first",
+        "second": "stub.second",
+        "gender": "stub.regress",
+        "other": "stub.refuse",
+    }
+    repairer = _repairer(tmp_path, _RuleValidator(rule), strategies, *stubs)
+
+    result = repairer.repair(_gustav())
+
+    assert "deceasedBoolean" not in result.fixed_resource
+    actions = {action.strategy: action for action in result.audit}
+    assert actions["stub.first"].risk == "low"
+    assert actions["stub.second"].risk == "refused"
+    assert "could not be replayed" in actions["stub.second"].explanation
+    assert actions["stub.refuse"].explanation == "Refused: always refuses."
+
+
+def test_guard_refusal_does_not_run_the_strategy(tmp_path):
+    stub = _Stub("stub.fix", "Patient.gender", "male")
+    validator = _ConstantValidator([_error("gender", "Patient.gender")])
+    repairer = _repairer(
+        tmp_path, validator, {"gender": "stub.fix"}, stub, guard=HallucinationGuard.strict()
+    )
+
+    result = repairer.repair(_gustav())
+
+    assert result.fixed_resource["gender"] == "M"
+    assert "hallucination guard denies permission 'allow_reformat'" in result.audit[0].explanation
 
 
 def test_one_fix_costs_two_validator_calls(tmp_path):
