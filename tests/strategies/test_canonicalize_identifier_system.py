@@ -85,6 +85,8 @@ def test_accepts_parent_identifier_element_location():
     assert resource["identifier"][0]["system"] == "https://github.com/synthetichealth/synthea"
     assert action.before == "SSN"
     assert action.after == "http://hl7.org/fhir/sid/us-ssn"
+    # The value went to .system, so a rollback replay must write it there.
+    assert action.written_path == "Patient.identifier[2].system"
 
 
 def test_parent_location_with_unmappable_system_is_refused():
