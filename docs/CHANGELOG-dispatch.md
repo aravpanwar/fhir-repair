@@ -50,3 +50,4 @@ way a benchmark consumer would want to see.
 | Strategy | Version | Change |
 |---|---|---|
 | `deterministic.normalize_date` | 1.1.0 | Refuses a day the calendar does not have, and a value already in ISO 8601 form instead of reporting it as a fix. |
+| `deterministic.normalize_decimal` | 1.1.0 | Refuses a value with more significant digits than a JSON number carries exactly, instead of writing back a rounded value. |

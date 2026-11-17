@@ -15,6 +15,8 @@ Refuses on:
   - Scientific notation, which FHIR R4 actually permits, so the validator
     should not have flagged it.
   - Multiple decimal separators or otherwise unparseable strings.
+  - More significant digits than a JSON number can carry exactly, since
+    writing it back would change the value.
 
 This is a deterministic strategy with no IO. It exercises the
 `allow_reformat` permission, which is on by default.
@@ -31,7 +33,7 @@ from fhir_repair.core.models import RepairAction, ValidationError
 from fhir_repair.strategies.base import refused
 
 NAME = "deterministic.normalize_decimal"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PERMISSION = "allow_reformat"
 RISK: Literal["low"] = "low"
 
@@ -76,7 +78,7 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
             VERSION,
             PERMISSION,
             before,
-            f"could not normalise {before!r} as a decimal",
+            f"could not normalise {before!r} as an exact JSON number",
         )
 
     set_at_path(resource, error.location, after)
@@ -130,4 +132,12 @@ def _normalize(value: str) -> int | float | None:
 
     if parsed == parsed.to_integral_value():
         return int(parsed)
-    return float(parsed)
+
+    # A float holds about 17 significant digits. Past that, the number
+    # written back would be a different value from the one submitted, so
+    # refuse rather than silently change a measurement. JSON serialises a
+    # float through repr, so that is the form to compare.
+    number = float(parsed)
+    if Decimal(repr(number)) != parsed:
+        return None
+    return number
