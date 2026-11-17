@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from fhir_repair.core.models import PromptSegment, ValidationError
 from fhir_repair.llm.base import Completion
 from fhir_repair.strategies.llm.runner import LLMStrategy
@@ -195,3 +197,47 @@ def test_permanent_errors_are_not_retried(monkeypatch):
     assert action.risk == "refused"
     assert provider.calls == 1
     assert waits == []
+
+
+class _StatusError(Exception):
+    """Shaped like the anthropic and openai SDK errors."""
+
+    def __init__(self, status_code: int) -> None:
+        super().__init__(f"HTTP {status_code}")
+        self.status_code = status_code
+
+
+class _BotocoreError(Exception):
+    """Shaped like botocore's ClientError."""
+
+    def __init__(self, status_code: int) -> None:
+        super().__init__(f"HTTP {status_code}")
+        self.response = {"ResponseMetadata": {"HTTPStatusCode": status_code}}
+
+
+@pytest.mark.parametrize(
+    "failure, retried",
+    [
+        (_StatusError(400), False),  # bad request: the same every time
+        (_StatusError(401), False),  # bad key
+        (_StatusError(404), False),  # unknown model
+        (_StatusError(408), True),
+        (_StatusError(429), True),
+        (_StatusError(503), True),
+        (_BotocoreError(403), False),
+        (_BotocoreError(429), True),
+        (TimeoutError("read timed out"), True),
+        (TypeError("bad argument"), False),
+    ],
+)
+def test_only_transient_errors_are_retried(monkeypatch, failure, retried):
+    # 4xx responses used to be retried with backoff like a dropped
+    # connection, although nothing about them changes between attempts.
+    provider = _FlakyProvider(1, failure)
+
+    action = _flaky_strategy(provider, [], monkeypatch).apply(
+        {"resourceType": "Patient", "gender": "M"}, _error()
+    )
+
+    assert provider.calls == (2 if retried else 1)
+    assert (action.risk != "refused") is retried

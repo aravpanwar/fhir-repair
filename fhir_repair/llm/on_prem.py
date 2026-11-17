@@ -71,9 +71,13 @@ class OnPremProvider:
                 "server serves. Set LLM_MODEL in the environment, or pass model="
             )
 
+        # max_retries=0: the LLM strategies retry transient failures
+        # themselves, and leaving the SDK's own retries on would multiply
+        # the attempts.
         self._client = openai.OpenAI(
             api_key=api_key or os.environ.get("LLM_API_KEY") or _UNAUTHENTICATED_PLACEHOLDER,
             base_url=resolved_endpoint,
+            max_retries=0,
         )
         self._model = model
         self._endpoint = resolved_endpoint

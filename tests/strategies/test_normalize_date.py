@@ -23,7 +23,7 @@ def _error(location: str = "Patient.birthDate") -> ValidationError:
         ("1990-3-5", "1990-03-05"),
         ("1990/03/05", "1990-03-05"),
         ("1990/3/5", "1990-03-05"),
-        ("1990-03-05", "1990-03-05"),
+        (" 1937-04-27 ", "1937-04-27"),
     ],
 )
 def test_year_first_padding(raw, expected):
@@ -54,6 +54,25 @@ def test_ambiguous_year_last_is_refused():
     assert action.risk == "refused"
     # Resource is left untouched on refusal.
     assert resource["birthDate"] == "01/02/2000"
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "1937-2-30",  # February has no 30th
+        "1937/04/31",  # April has 30 days
+        "31/04/1937",  # same, year last
+        "2023-13-45",  # ISO-shaped but not a date
+        "1937-04-27",  # already ISO 8601: nothing to fix
+    ],
+)
+def test_invalid_or_unchanged_dates_are_refused(raw):
+    # An unchanged value reported as a fix also stopped the processing
+    # chain, so later strategies never saw the error.
+    resource = {"resourceType": "Patient", "birthDate": raw}
+    action = date_strategy.apply(resource, _error())
+    assert action.risk == "refused"
+    assert resource["birthDate"] == raw
 
 
 def test_non_string_value_is_refused():

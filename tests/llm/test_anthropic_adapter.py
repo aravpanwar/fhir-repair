@@ -156,3 +156,15 @@ def test_supports_caching_is_true(fake_anthropic, monkeypatch):
 
     provider = AnthropicProvider()
     assert provider.supports_caching() is True
+
+
+def test_sdk_retries_are_off(fake_anthropic, monkeypatch):
+    # The strategies retry transient failures; the SDK retrying as well
+    # turned three retries into up to twelve requests.
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.anthropic import AnthropicProvider
+
+    AnthropicProvider()
+
+    assert fake_anthropic["init"]["max_retries"] == 0

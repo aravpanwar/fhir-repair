@@ -152,3 +152,11 @@ def test_supports_caching_is_false(fake_openai):
 
     provider = OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
     assert provider.supports_caching() is False
+
+
+def test_sdk_retries_are_off(fake_openai):
+    from fhir_repair.llm.on_prem import OnPremProvider
+
+    OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
+
+    assert fake_openai["init"]["max_retries"] == 0

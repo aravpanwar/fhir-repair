@@ -36,12 +36,12 @@ class LLMConfig(BaseModel):
     endpoint: str | None = None
     api_key: str | None = None
 
-    # Transient error retry. Retrying is safe because LLM calls are
-    # deterministic at temperature 0.0 and the upstream provider
-    # deduplicates idempotent requests. Only connection errors and
-    # rate-limit responses are retried; parse failures and 4xx errors
-    # are not, since those indicate a configuration or content problem
-    # that will not resolve with backoff.
+    # Transient error retry, the only retry layer: the provider SDKs' own
+    # retries are turned off so the two do not multiply. A failed call
+    # returned no answer, so retrying cannot apply a fix twice. Connection
+    # errors, timeouts, 408, 409, 429 and 5xx are retried; other 4xx
+    # responses and unparseable answers are not, since backoff will not
+    # change them.
     max_retries: int = 3
     backoff_base_s: float = 1.0
     backoff_max_s: float = 30.0

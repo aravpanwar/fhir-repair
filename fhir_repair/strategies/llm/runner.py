@@ -162,18 +162,23 @@ class LLMStrategy:
             segments.append(PromptSegment(role="system", text=spec_excerpt, stable=True))
         segments.append(PromptSegment(role="user", text=rendered, stable=False))
 
-        completion = self._call_with_retry(segments)
-        if completion is None:
-            # retry loop exhausted; refusal already returned below
+        try:
+            completion = call_with_retry(
+                self._provider,
+                segments,
+                max_retries=self._max_retries,
+                backoff_base_s=self._backoff_base_s,
+                backoff_max_s=self._backoff_max_s,
+            )
+        except Exception as exc:
             return refused(
                 error,
                 self.name,
                 self.version,
                 self.permission,
                 before,
-                "LLM call failed after all retries.",
+                f"LLM call failed: {exc}",
             )
-        latency_ms = completion.latency_ms
 
         try:
             new_value = self._parser(completion.text)
@@ -243,62 +248,88 @@ class LLMStrategy:
             after=after,
             removed=removed,
             explanation=explanation,
-            llm={
-                "provider": completion.provider,
-                "model": completion.model,
-                "prompt_version": self._prompt_version,
-                "prompt_hash": hash_prompt(rendered),
-                "input_tokens": completion.input_tokens,
-                "output_tokens": completion.output_tokens,
-                "cached_tokens": completion.cached_tokens,
-                "latency_ms": latency_ms,
-            },
+            llm=llm_provenance(completion, self._prompt_version, rendered),
         )
         return action
 
-    def _call_with_retry(
-        self,
-        segments: list[PromptSegment],
-    ) -> Completion | None:
-        """Call the provider with exponential backoff on transient failures.
 
-        Retries on connection errors and rate limits. Permanent failures
-        (import errors, bad credentials, parse failures) do not retry.
-        Returns None only when all attempts have been exhausted; the caller
-        converts that into a refusal.
-        """
-        deadline = self._backoff_max_s
-        for attempt in range(self._max_retries + 1):
-            call_start = time.perf_counter()
-            try:
-                result = self._provider.complete(segments)
-                # Overwrite latency with our own measurement so it
-                # reflects the wall-clock cost including any retries.
-                result.latency_ms = int((time.perf_counter() - call_start) * 1000)
-                return result
-            except (ImportError, ValueError) as exc:
-                # Permanent configuration or dependency errors. Do not
-                # retry; the caller will write a refusal with the message.
-                logger.warning("permanent LLM error: %s", exc)
-                return None
-            except Exception as exc:
-                logger.warning(
-                    "LLM call attempt %d/%d failed: %s",
-                    attempt + 1,
-                    self._max_retries + 1,
-                    exc,
-                )
-                if attempt == self._max_retries:
-                    return None
-                # Exponential backoff with full jitter. Base grows as
-                # base * 2^attempt, clamped to backoff_max_s, then
-                # multiplied by a uniform random factor in [0.5, 1.0].
-                base = self._backoff_base_s * (2**attempt)
-                capped = min(base, deadline)
-                wait = capped * (0.5 + random.random() * 0.5)
-                logger.debug("retrying in %.1fs", wait)
-                time.sleep(wait)
-        return None
+def call_with_retry(
+    provider: LLMProvider,
+    segments: list[PromptSegment],
+    *,
+    max_retries: int,
+    backoff_base_s: float,
+    backoff_max_s: float,
+) -> Completion:
+    """Call the provider, retrying transient failures with backoff.
+
+    Raises the last error once retries run out, or at once for an error
+    retrying cannot fix. The completion's `latency_ms` is the successful
+    attempt alone, so it stays comparable between runs that did and did not
+    need a retry.
+    """
+    attempt = 0
+    while True:
+        start = time.perf_counter()
+        try:
+            completion = provider.complete(segments)
+        except Exception as exc:
+            if attempt >= max_retries or not _is_transient(exc):
+                raise
+            # Exponential backoff with jitter: base * 2^attempt, capped at
+            # backoff_max_s, then scaled by a random factor in [0.5, 1.0] so
+            # parallel runs hitting the same rate limit do not retry in step.
+            wait = min(backoff_base_s * 2**attempt, backoff_max_s) * (0.5 + random.random() / 2)
+            logger.warning(
+                "LLM call attempt %d/%d failed, retrying in %.1fs: %s",
+                attempt + 1,
+                max_retries + 1,
+                wait,
+                exc,
+            )
+            time.sleep(wait)
+            attempt += 1
+        else:
+            completion.latency_ms = int((time.perf_counter() - start) * 1000)
+            return completion
+
+
+# The same statuses the provider SDKs treat as retryable: request timeout,
+# conflict, rate limit, and server errors. Anything else in 4xx (a bad
+# request, a bad key, an unknown model) fails the same way every time.
+_TRANSIENT_STATUSES = frozenset({408, 409, 429})
+
+
+def _is_transient(exc: Exception) -> bool:
+    """True if retrying the call that raised `exc` could succeed.
+
+    Provider-neutral: the anthropic and openai SDKs put the HTTP status on
+    `status_code`, botocore puts it in `response`. An error with no status
+    is a connection failure or timeout unless it is one of the types that
+    signal a configuration or programming problem.
+    """
+    status = getattr(exc, "status_code", None)
+    if status is None:
+        response = getattr(exc, "response", None)
+        if isinstance(response, dict):
+            status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+    if isinstance(status, int):
+        return status in _TRANSIENT_STATUSES or status >= 500
+    return not isinstance(exc, ImportError | ValueError | TypeError | AttributeError | KeyError)
+
+
+def llm_provenance(completion: Completion, prompt_version: str, prompt: str) -> dict[str, Any]:
+    """The `llm` block of an audit entry for an action that came from `completion`."""
+    return {
+        "provider": completion.provider,
+        "model": completion.model,
+        "prompt_version": prompt_version,
+        "prompt_hash": hash_prompt(prompt),
+        "input_tokens": completion.input_tokens,
+        "output_tokens": completion.output_tokens,
+        "cached_tokens": completion.cached_tokens,
+        "latency_ms": completion.latency_ms,
+    }
 
 
 # A short system prompt tuned for fix-the-broken-FHIR tasks. Sets the JSON
@@ -379,6 +410,9 @@ def register_default_llm_strategies(
         invariant_mod.InvariantStrategy(
             provider=provider,
             prompt_version=prompt_version,
+            max_retries=max_retries,
+            backoff_base_s=backoff_base_s,
+            backoff_max_s=backoff_max_s,
         )
     )
     registry.register(

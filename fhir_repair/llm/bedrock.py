@@ -44,6 +44,7 @@ class BedrockProvider:
         # optional `boto3` dependency installed.
         try:
             import boto3
+            from botocore.config import Config
         except ImportError as exc:
             raise ImportError(
                 "BedrockProvider requires the optional `boto3` package. "
@@ -62,10 +63,13 @@ class BedrockProvider:
         # No api_key argument: boto3 resolves credentials from the standard
         # AWS chain. A deployer running on an instance role supplies nothing
         # at all, which is the point of using Bedrock.
+        # One attempt per call: the LLM strategies retry transient failures
+        # themselves, and botocore's own retries would multiply them.
         self._client = boto3.client(
             "bedrock-runtime",
             region_name=resolved_region,
             endpoint_url=endpoint,
+            config=Config(retries={"total_max_attempts": 1}),
         )
         self._model = model
 
@@ -104,13 +108,19 @@ class BedrockProvider:
                 "must include at least one user segment."
             )
 
+        # Same reasoning as the Anthropic adapter, since Claude is what most
+        # Bedrock deployments run: recent Claude models think by default and
+        # thinking counts against maxTokens, and Sonnet 5 and later reject
+        # `temperature`. So the cap leaves room for thinking, and
+        # `temperature` is sent only when the caller asks for it.
+        inference: dict[str, Any] = {"maxTokens": kwargs.get("max_tokens", 16000)}
+        if "temperature" in kwargs:
+            inference["temperature"] = kwargs["temperature"]
+
         request: dict[str, Any] = {
             "modelId": self._model,
             "messages": messages,
-            "inferenceConfig": {
-                "maxTokens": kwargs.get("max_tokens", 1024),
-                "temperature": kwargs.get("temperature", 0.0),
-            },
+            "inferenceConfig": inference,
         }
         if system_blocks:
             request["system"] = system_blocks

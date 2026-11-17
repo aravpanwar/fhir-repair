@@ -40,3 +40,14 @@ Strategies resolve in this order:
 ### Migration from prior versions
 
 Not applicable; this is the first version.
+
+## Strategy versions
+
+Each strategy records its own `VERSION` in every audit entry
+(`strategy_version`). It changes when the strategy's output changes in a
+way a benchmark consumer would want to see.
+
+| Strategy | Version | Change |
+|---|---|---|
+| `deterministic.normalize_date` | 1.1.0 | Refuses a day the calendar does not have, and a value already in ISO 8601 form instead of reporting it as a fix. |
+| `deterministic.normalize_decimal` | 1.1.0 | Refuses a value with more significant digits than a JSON number carries exactly, instead of writing back a rounded value. |

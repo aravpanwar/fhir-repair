@@ -29,23 +29,11 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     before = get_at_path(resource, error.location)
 
     if not isinstance(before, list):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not a list",
-        )
+        return _refuse(error, before, "value at path is not a list")
 
     if len(before) != 1:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"list length is {len(before)}; only singleton arrays are unwrapped",
+        return _refuse(
+            error, before, f"list length is {len(before)}; only singleton arrays are unwrapped"
         )
 
     after = before[0]
@@ -61,3 +49,7 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
         after=after,
         explanation="Unwrapped singleton array to scalar.",
     )
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)

@@ -7,7 +7,8 @@ Handles common malformations seen in legacy ETL output:
   - US-style ordering when unambiguous: `13/05/1990` -> `1990-05-13`
 
 Refuses on ambiguous input. `01/02/2000` could be Jan 2 or Feb 1; we do not
-guess.
+guess. Also refuses a day the calendar does not have (`1990-2-31`) and a
+value that is already ISO 8601, which this strategy cannot improve.
 
 This is a deterministic strategy with no IO. It exercises the
 `allow_reformat` permission, which is the lowest-risk permission and on by
@@ -16,6 +17,7 @@ default.
 
 from __future__ import annotations
 
+import datetime
 import re
 from typing import Any, Literal
 
@@ -24,7 +26,7 @@ from fhir_repair.core.models import RepairAction, ValidationError
 from fhir_repair.strategies.base import refused
 
 NAME = "deterministic.normalize_date"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PERMISSION = "allow_reformat"
 RISK: Literal["low"] = "low"
 
@@ -40,25 +42,16 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     before = get_at_path(resource, error.location)
 
     if not isinstance(before, str):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not a string",
-        )
+        return _refuse(error, before, "value at path is not a string")
 
     after = _normalize(before)
     if after is None:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"no recognised date pattern in {before!r}",
-        )
+        return _refuse(error, before, f"no valid date in {before!r}")
+
+    # Reporting an unchanged value as a fix would also stop the dispatch
+    # chain here, so the strategies after this one never see the error.
+    if after == before:
+        return _refuse(error, before, f"{before!r} is already an ISO 8601 date")
 
     set_at_path(resource, error.location, after)
 
@@ -77,11 +70,6 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
 def _normalize(value: str) -> str | None:
     """Return the ISO 8601 form of `value`, or None if it cannot be normalised."""
     s = value.strip()
-
-    # Already-valid ISO is left alone (the validator should not have
-    # complained, but if it did the strategy is a no-op).
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
-        return s
 
     match = _YEAR_FIRST_RE.match(s)
     if match:
@@ -107,11 +95,12 @@ def _normalize(value: str) -> str | None:
 
 
 def _format(year: str, month: str, day: str) -> str | None:
-    """Validate and zero-pad the components into `YYYY-MM-DD`."""
+    """Return `YYYY-MM-DD` if the components name a real calendar day."""
     try:
-        m, d = int(month), int(day)
+        return datetime.date(int(year), int(month), int(day)).isoformat()
     except ValueError:
         return None
-    if not (1 <= m <= 12 and 1 <= d <= 31):
-        return None
-    return f"{year}-{m:02d}-{d:02d}"
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)

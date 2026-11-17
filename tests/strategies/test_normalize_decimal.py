@@ -63,6 +63,20 @@ def test_result_serialises_as_a_json_number():
     assert '"value": 69.64' in json.dumps(resource)
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "12345678901234567.89",  # would come back as 1.2345678901234568e+16
+        "0,10000000000000000001",  # would come back as 0.1
+    ],
+)
+def test_digits_a_json_number_cannot_hold_are_refused(raw):
+    resource = {"resourceType": "Observation", "valueQuantity": {"value": raw}}
+    action = decimal_strategy.apply(resource, _error())
+    assert action.risk == "refused"
+    assert resource["valueQuantity"]["value"] == raw
+
+
 def test_already_numeric_is_refused():
     # Validator complaint about a numeric value is not something we can fix
     # by reformatting the string.
