@@ -49,48 +49,24 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     before = get_at_path(resource, error.location)
 
     if not isinstance(before, dict):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not a ContactPoint object",
-        )
+        return _refuse(error, before, "value at path is not a ContactPoint object")
 
     system = before.get("system")
     value = before.get("value")
 
     if not isinstance(system, str) or not isinstance(value, str):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "ContactPoint is missing a string system or value",
-        )
+        return _refuse(error, before, "ContactPoint is missing a string system or value")
 
     new_value = _normalize_value(system, value)
     if new_value is None:
-        return refused(
+        return _refuse(
             error,
-            NAME,
-            VERSION,
-            PERMISSION,
             before,
             f"value {value!r} does not match a redundant prefix for system {system!r}",
         )
 
     if new_value == value:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "ContactPoint value is already canonical",
-        )
+        return _refuse(error, before, "ContactPoint value is already canonical")
 
     after = dict(before)
     after["value"] = new_value
@@ -145,3 +121,7 @@ def _all_foreign_prefixes(system: str) -> set[str]:
             continue
         foreign.update(other_prefixes)
     return foreign - own
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)

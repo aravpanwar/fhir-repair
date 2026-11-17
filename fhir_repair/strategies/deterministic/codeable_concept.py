@@ -47,45 +47,17 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     before = get_at_path(resource, error.location)
 
     if not isinstance(before, dict):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not an object",
-        )
+        return _refuse(error, before, "value at path is not an object")
 
     if "coding" in before:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value already has a coding array",
-        )
+        return _refuse(error, before, "value already has a coding array")
 
     if "code" not in before:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value has no code to anchor a Coding",
-        )
+        return _refuse(error, before, "value has no code to anchor a Coding")
 
     unexpected = set(before) - _CODING_KEYS - {"text"}
     if unexpected:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"value has non-Coding keys {sorted(unexpected)}",
-        )
+        return _refuse(error, before, f"value has non-Coding keys {sorted(unexpected)}")
 
     coding = {key: value for key, value in before.items() if key in _CODING_KEYS}
     after: dict[str, Any] = {"coding": [coding]}
@@ -104,3 +76,7 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
         after=after,
         explanation="Nested bare Coding inside a CodeableConcept coding array.",
     )
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)

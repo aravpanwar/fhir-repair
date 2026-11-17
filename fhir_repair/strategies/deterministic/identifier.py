@@ -64,25 +64,11 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
         before = before.get("system")
 
     if not isinstance(before, str):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not a string",
-        )
+        return _refuse(error, before, "value at path is not a string")
 
     after = _canonicalize(before)
     if after is None or after == before:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"no canonical system known for {before!r}",
-        )
+        return _refuse(error, before, f"no canonical system known for {before!r}")
 
     set_at_path(resource, location, after)
 
@@ -116,3 +102,7 @@ def _canonicalize(value: str) -> str | None:
         return trimmed
 
     return None
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)

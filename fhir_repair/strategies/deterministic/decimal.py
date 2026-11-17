@@ -51,35 +51,14 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
         # Already a numeric type. The validator likely complained about
         # serialisation, not value; we cannot meaningfully reformat a number
         # that is not a string.
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is already numeric, not a malformed string",
-        )
+        return _refuse(error, before, "value at path is already numeric, not a malformed string")
 
     if not isinstance(before, str):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not a string",
-        )
+        return _refuse(error, before, "value at path is not a string")
 
     after = _normalize(before)
     if after is None:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"could not normalise {before!r} as an exact JSON number",
-        )
+        return _refuse(error, before, f"could not normalise {before!r} as an exact JSON number")
 
     set_at_path(resource, error.location, after)
 
@@ -141,3 +120,7 @@ def _normalize(value: str) -> int | float | None:
     if Decimal(repr(number)) != parsed:
         return None
     return number
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)

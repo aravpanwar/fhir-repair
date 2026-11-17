@@ -42,37 +42,16 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
     before = get_at_path(resource, error.location)
 
     if not isinstance(before, str):
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            "value at path is not a string",
-        )
+        return _refuse(error, before, "value at path is not a string")
 
     after = _normalize(before)
     if after is None:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"no valid date in {before!r}",
-        )
+        return _refuse(error, before, f"no valid date in {before!r}")
 
     # Reporting an unchanged value as a fix would also stop the dispatch
     # chain here, so the strategies after this one never see the error.
     if after == before:
-        return refused(
-            error,
-            NAME,
-            VERSION,
-            PERMISSION,
-            before,
-            f"{before!r} is already an ISO 8601 date",
-        )
+        return _refuse(error, before, f"{before!r} is already an ISO 8601 date")
 
     set_at_path(resource, error.location, after)
 
@@ -121,3 +100,7 @@ def _format(year: str, month: str, day: str) -> str | None:
         return datetime.date(int(year), int(month), int(day)).isoformat()
     except ValueError:
         return None
+
+
+def _refuse(error: ValidationError, before: Any, reason: str) -> RepairAction:
+    return refused(error, NAME, VERSION, PERMISSION, before, reason)
