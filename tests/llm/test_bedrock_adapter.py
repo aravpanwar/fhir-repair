@@ -169,3 +169,25 @@ def test_non_text_blocks_are_ignored(fake_boto3):
         }
     }
     assert bedrock._extract_text(response) == "kept"
+
+
+def test_temperature_is_omitted_by_default(fake_boto3):
+    # Sonnet 5 and later reject temperature, on Bedrock as directly.
+    from fhir_repair.llm.bedrock import BedrockProvider
+
+    BedrockProvider().complete([PromptSegment(role="user", text="hi", stable=False)])
+
+    inference = fake_boto3["request"]["inferenceConfig"]
+    assert "temperature" not in inference
+    # Thinking counts against maxTokens, so 1024 can starve the answer.
+    assert inference["maxTokens"] >= 16000
+
+
+def test_temperature_is_sent_when_explicitly_requested(fake_boto3):
+    from fhir_repair.llm.bedrock import BedrockProvider
+
+    BedrockProvider().complete(
+        [PromptSegment(role="user", text="hi", stable=False)], temperature=0.0
+    )
+
+    assert fake_boto3["request"]["inferenceConfig"]["temperature"] == 0.0

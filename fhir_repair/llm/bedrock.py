@@ -108,13 +108,19 @@ class BedrockProvider:
                 "must include at least one user segment."
             )
 
+        # Same reasoning as the Anthropic adapter, since Claude is what most
+        # Bedrock deployments run: recent Claude models think by default and
+        # thinking counts against maxTokens, and Sonnet 5 and later reject
+        # `temperature`. So the cap leaves room for thinking, and
+        # `temperature` is sent only when the caller asks for it.
+        inference: dict[str, Any] = {"maxTokens": kwargs.get("max_tokens", 16000)}
+        if "temperature" in kwargs:
+            inference["temperature"] = kwargs["temperature"]
+
         request: dict[str, Any] = {
             "modelId": self._model,
             "messages": messages,
-            "inferenceConfig": {
-                "maxTokens": kwargs.get("max_tokens", 1024),
-                "temperature": kwargs.get("temperature", 0.0),
-            },
+            "inferenceConfig": inference,
         }
         if system_blocks:
             request["system"] = system_blocks
