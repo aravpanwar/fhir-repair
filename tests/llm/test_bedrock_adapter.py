@@ -42,6 +42,12 @@ def fake_boto3(monkeypatch):
     fake_module = types.ModuleType("boto3")
     fake_module.client = _client  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "boto3", fake_module)
+
+    # botocore ships with boto3, which the test environment may not have.
+    fake_config = types.ModuleType("botocore.config")
+    fake_config.Config = lambda **kwargs: kwargs  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "botocore", types.ModuleType("botocore"))
+    monkeypatch.setitem(sys.modules, "botocore.config", fake_config)
     monkeypatch.setenv("AWS_REGION", "us-east-1")
 
     return captured
@@ -54,6 +60,8 @@ def test_builds_bedrock_runtime_client(fake_boto3):
 
     assert fake_boto3["service"] == "bedrock-runtime"
     assert fake_boto3["init"]["region_name"] == "us-east-1"
+    # The strategies retry; botocore retrying too would multiply attempts.
+    assert fake_boto3["init"]["config"] == {"retries": {"total_max_attempts": 1}}
 
 
 def test_no_api_key_is_read(fake_boto3, monkeypatch):

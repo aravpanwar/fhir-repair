@@ -128,3 +128,15 @@ def test_supports_caching_is_false(fake_openai, monkeypatch):
 
     provider = OpenAIProvider()
     assert provider.supports_caching() is False
+
+
+def test_sdk_retries_are_off(fake_openai, monkeypatch):
+    # The strategies retry transient failures; the SDK retrying as well
+    # turned three retries into up to twelve requests.
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.openai import OpenAIProvider
+
+    OpenAIProvider()
+
+    assert fake_openai["init"]["max_retries"] == 0

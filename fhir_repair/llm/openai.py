@@ -50,9 +50,13 @@ class OpenAIProvider:
 
         # `base_url` lets advanced deployers point at a private proxy or an
         # Azure/OpenAI-compatible gateway.
+        # max_retries=0: the LLM strategies retry transient failures
+        # themselves, and leaving the SDK's own retries on would multiply
+        # the attempts.
         self._client = openai.OpenAI(
             api_key=resolved_key,
             base_url=endpoint,
+            max_retries=0,
         )
         self._model = model
         # Reported in the audit log and the leaderboard. Overridable because
