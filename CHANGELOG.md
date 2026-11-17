@@ -16,11 +16,29 @@
 - A resource id containing path separators could place its audit log
   outside the audit directory.
 - `limits.max_llm_calls_per_resource` was never enforced.
+- `normalize_date` wrote days the calendar does not have (`1990-02-31`) and
+  reported an already-ISO value, even `2023-13-45`, as a fix, which kept
+  the rest of the dispatch chain from running. Now 1.1.0.
+- `normalize_decimal` wrote back a rounded value when the input had more
+  significant digits than a JSON number holds. It now refuses. Now 1.1.0.
+- LLM strategies retried 4xx responses such as a bad key or an unknown
+  model. Only connection errors, timeouts, 408, 409, 429 and 5xx are
+  retried now, and `llm.resolve_invariant` retries like the others.
+- The CLI printed a traceback for bad input, a broken config or an
+  unreachable validator, and its summary subtracted error counts from
+  action counts.
 
 ### Changed
 
 - A simple fix costs half as many validator calls: the loop reuses the
   error list it already has instead of validating the same state again.
+- The provider SDKs no longer retry on their own underneath the
+  strategies' retry loop, which could turn three retries into twelve
+  requests.
+- The Bedrock adapter sends `temperature` only when asked and allows 16000
+  output tokens, matching the Anthropic adapter.
+- The CLI exits 2 when it cannot run, keeping 1 for errors left unresolved.
+- Supports anthropic 2.x, openai 3.x and typer up to 0.29.
 
 ## 0.2.0 - 2026-10-08
 
