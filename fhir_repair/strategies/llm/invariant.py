@@ -24,17 +24,16 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Template
 
-from fhir_repair.core.audit import hash_prompt
 from fhir_repair.core.fhirpath import delete_at_path, get_at_path
 from fhir_repair.core.models import PromptSegment, RepairAction, ValidationError
 from fhir_repair.llm.base import LLMProvider
 from fhir_repair.strategies.base import refused
+from fhir_repair.strategies.llm.runner import call_with_retry, llm_provenance
 
 logger = logging.getLogger(__name__)
 
@@ -112,10 +111,16 @@ class InvariantStrategy:
         provider: LLMProvider,
         prompt_version: str = "v1",
         prompt_path: Path | None = None,
+        max_retries: int = 3,
+        backoff_base_s: float = 1.0,
+        backoff_max_s: float = 30.0,
     ) -> None:
         self._provider = provider
         self._prompt_version = prompt_version
         self._template = Template((prompt_path or _PROMPT_PATH).read_text(encoding="utf-8"))
+        self._max_retries = max_retries
+        self._backoff_base_s = backoff_base_s
+        self._backoff_max_s = backoff_max_s
 
     def apply(
         self,
@@ -146,13 +151,17 @@ class InvariantStrategy:
             PromptSegment(role="user", text=rendered, stable=False),
         ]
 
-        start = time.perf_counter()
         try:
-            completion = self._provider.complete(segments)
+            completion = call_with_retry(
+                self._provider,
+                segments,
+                max_retries=self._max_retries,
+                backoff_base_s=self._backoff_base_s,
+                backoff_max_s=self._backoff_max_s,
+            )
         except Exception as exc:
             logger.warning("invariant LLM call failed: %s", exc)
             return self._refuse(error, None, f"LLM call failed: {exc}")
-        latency_ms = int((time.perf_counter() - start) * 1000)
 
         try:
             target = parse_invariant_response(completion.text)
@@ -187,16 +196,7 @@ class InvariantStrategy:
             explanation=(
                 f"LLM ({completion.model}) resolved the invariant by removing {location}."
             ),
-            llm={
-                "provider": completion.provider,
-                "model": completion.model,
-                "prompt_version": self._prompt_version,
-                "prompt_hash": hash_prompt(rendered),
-                "input_tokens": completion.input_tokens,
-                "output_tokens": completion.output_tokens,
-                "cached_tokens": completion.cached_tokens,
-                "latency_ms": latency_ms,
-            },
+            llm=llm_provenance(completion, self._prompt_version, rendered),
         )
 
     def _refuse(self, error: ValidationError, before: Any, reason: str) -> RepairAction:

@@ -190,13 +190,38 @@ def test_unparseable_response_is_refused():
 
 def test_provider_failure_is_refused():
     registry = StrategyRegistry()
-    register_default_llm_strategies(registry, _ExplodingProvider())
+    register_default_llm_strategies(registry, _ExplodingProvider(), max_retries=0)
     resource = _observation()
 
     action = registry.get(NAME).apply(resource, _error())
 
     assert action.risk == "refused"
     assert "dataAbsentReason" in resource
+
+
+def test_transient_failure_is_retried(monkeypatch):
+    # The invariant strategy made one call with no retry, unlike the
+    # other LLM strategies.
+    class _FlakyProvider(_ScriptedProvider):
+        calls = 0
+
+        def complete(self, segments, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                raise ConnectionError("reset")
+            return super().complete(segments, **kwargs)
+
+    monkeypatch.setattr("fhir_repair.strategies.llm.runner.time.sleep", lambda _: None)
+    provider = _FlakyProvider('{"remove": "dataAbsentReason"}')
+    registry = StrategyRegistry()
+    register_default_llm_strategies(registry, provider)
+    resource = _observation()
+
+    action = registry.get(NAME).apply(resource, _error())
+
+    assert action.risk != "refused"
+    assert "dataAbsentReason" not in resource
+    assert provider.calls == 2
 
 
 def test_candidates_exclude_structural_elements():
