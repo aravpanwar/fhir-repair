@@ -10,6 +10,8 @@ import json
 from collections.abc import Callable
 from typing import Any
 
+import pytest
+
 from fhir_repair.core.config import LoggingConfig, RepairConfig
 from fhir_repair.core.fhirpath import delete_at_path, get_at_path, set_at_path
 from fhir_repair.core.models import RepairAction, ValidationError
@@ -266,6 +268,15 @@ def test_summary_counts_fixed_errors_not_a_difference(tmp_path):
         "duration_ms": summary["duration_ms"],
     }
     assert len(result.unresolved) == 2
+
+
+def test_unknown_strategy_id_fails_at_construction(tmp_path):
+    with pytest.raises(ValueError, match=r"unknown strategy 'deterministic\.normalise_date'"):
+        _repairer(
+            tmp_path,
+            _ConstantValidator([]),
+            {"processing": ["refuse", "deterministic.normalise_date"]},
+        )
 
 
 def test_audit_filenames_do_not_collide_within_one_second(tmp_path):

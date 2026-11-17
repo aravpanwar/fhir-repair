@@ -13,6 +13,7 @@ from __future__ import annotations
 import copy
 import time
 import uuid
+from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -67,20 +68,22 @@ class Repairer:
         # us build one from config; either way we fail loudly at construction
         # time if the references can't be satisfied, rather than discovering
         # the mismatch mid-repair.
-        if self._dispatch_uses_llm():
+        if any(_is_llm(sid) for _, sid in self._dispatch_entries()):
             self._register_llm_strategies(llm_provider)
 
-    def _dispatch_uses_llm(self) -> bool:
-        """True if any dispatch table value names an LLM strategy.
+        # A misspelled id would otherwise surface as a KeyError partway
+        # through a repair, after the audit file is open and other fixes
+        # have been applied.
+        known = set(self._registry.names())
+        for code, sid in self._dispatch_entries():
+            if sid != "refuse" and sid not in known:
+                raise ValueError(f"unknown strategy {sid!r} in the dispatch entry for {code!r}")
 
-        Handles both single-string entries and chain (list-of-string)
-        entries.
-        """
-        for value in self._config.strategies.values():
-            ids = [value] if isinstance(value, str) else list(value)
-            if any(sid == "llm" or sid.startswith("llm.") for sid in ids):
-                return True
-        return False
+    def _dispatch_entries(self) -> Iterator[tuple[str, str]]:
+        """Every (error code, strategy id) pair in the dispatch table."""
+        for code, value in self._config.strategies.items():
+            for sid in [value] if isinstance(value, str) else value:
+                yield code, sid
 
     def _register_llm_strategies(
         self,
@@ -374,6 +377,10 @@ def _refuse_after_rollback(action: RepairAction, reason: str) -> RepairAction:
         removed=False,
         explanation=f"Refused after rollback: {reason}.",
     )
+
+
+def _is_llm(strategy_id: str) -> bool:
+    return strategy_id == "llm" or strategy_id.startswith("llm.")
 
 
 def _elapsed_ms(start: float) -> int:
