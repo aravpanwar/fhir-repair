@@ -289,6 +289,18 @@ def test_audit_filenames_do_not_collide_within_one_second(tmp_path):
     assert first._destination != second._destination
 
 
+@pytest.mark.parametrize("resource_id", ["../../../escaped", "a/b", "c:\\d?e"])
+def test_audit_file_stays_in_the_audit_directory(tmp_path, resource_id):
+    audit_dir = tmp_path / "audit"
+    repairer = _repairer(audit_dir, _ConstantValidator([_error("x", "Patient")]), {})
+
+    repairer.repair({"resourceType": "Patient", "id": resource_id})
+
+    written = [path for path in tmp_path.rglob("*") if path.is_file()]
+    assert len(written) == 1
+    assert written[0].parent == audit_dir
+
+
 def test_mapped_but_unfixed_errors_are_reported_unresolved(tmp_path):
     # A mapped error that never gets fixed and an unmapped error together.
     # The unmapped error populates `unresolved` early; the mapped one must

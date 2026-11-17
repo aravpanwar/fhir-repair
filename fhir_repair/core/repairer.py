@@ -11,6 +11,7 @@ This module contains no strategy logic. Strategies live under
 from __future__ import annotations
 
 import copy
+import re
 import time
 import uuid
 from collections.abc import Iterator
@@ -318,9 +319,8 @@ class Repairer:
         # second.
         ts = time.strftime("%Y%m%dT%H%M%S")
         suffix = uuid.uuid4().hex[:6]
-        path = Path(self._config.logging.audit_destination) / (
-            f"{resource_type}-{resource_id}-{ts}-{suffix}.audit.jsonl"
-        )
+        name = f"{_file_safe(resource_type)}-{_file_safe(resource_id)}-{ts}-{suffix}"
+        path = Path(self._config.logging.audit_destination) / f"{name}.audit.jsonl"
 
         return AuditWriter(
             destination=path,
@@ -377,6 +377,16 @@ def _refuse_after_rollback(action: RepairAction, reason: str) -> RepairAction:
         removed=False,
         explanation=f"Refused after rollback: {reason}.",
     )
+
+
+# A valid FHIR id only uses these characters, but the id comes from the
+# input (over the network, for the HTTP service), so it cannot be trusted
+# not to carry a path separator or a name Windows rejects.
+_UNSAFE_IN_FILENAME = re.compile(r"[^A-Za-z0-9.-]")
+
+
+def _file_safe(value: str) -> str:
+    return _UNSAFE_IN_FILENAME.sub("_", value)[:64]
 
 
 def _is_llm(strategy_id: str) -> bool:
