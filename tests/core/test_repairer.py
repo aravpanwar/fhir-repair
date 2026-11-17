@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from fhir_repair.core.config import LoggingConfig, RepairConfig
+from fhir_repair.core.config import LimitsConfig, LoggingConfig, RepairConfig
 from fhir_repair.core.fhirpath import delete_at_path, get_at_path, set_at_path
 from fhir_repair.core.models import RepairAction, ValidationError
 from fhir_repair.core.repairer import Repairer
@@ -268,6 +268,41 @@ def test_summary_counts_fixed_errors_not_a_difference(tmp_path):
         "duration_ms": summary["duration_ms"],
     }
     assert len(result.unresolved) == 2
+
+
+class _CountingLLMStrategy(_RefusingStrategy):
+    name = "llm.counting"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def apply(self, resource: dict, error: ValidationError) -> RepairAction:
+        self.calls += 1
+        return super().apply(resource, error)
+
+
+def test_llm_strategies_stop_at_the_per_resource_limit(tmp_path):
+    # max_llm_calls_per_resource was documented but never read.
+    llm = _CountingLLMStrategy()
+    registry = StrategyRegistry()
+    registry.register(llm)
+    config = RepairConfig(
+        strategies={"code": "llm.counting"},
+        limits=LimitsConfig(max_llm_calls_per_resource=2),
+        logging=LoggingConfig(audit_destination=str(tmp_path)),
+    )
+    errors = [_error("code", f"Patient.field{i}") for i in range(3)]
+    repairer = Repairer(
+        validator=_ConstantValidator(errors),
+        registry=registry,
+        config=config,
+        llm_provider=object(),  # type: ignore[arg-type]
+    )
+
+    result = repairer.repair(_gustav())
+
+    assert llm.calls == 2
+    assert "LLM call limit" in result.audit[-1].explanation
 
 
 def test_unknown_strategy_id_fails_at_construction(tmp_path):

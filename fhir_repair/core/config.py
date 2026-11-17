@@ -77,9 +77,10 @@ class HallucinationGuardConfig(BaseModel):
 class LimitsConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Bounds the validate-fix-revalidate loop. This is a correctness limit
-    # (preventing infinite loops), not a cost limit. Cost is the deployer's
-    # responsibility at the LLM provider level.
+    # `max_attempts` bounds the validate-fix-revalidate loop.
+    # `max_llm_calls_per_resource` bounds how many times an LLM strategy is
+    # invoked for one resource; once it is spent, further LLM strategies
+    # refuse. Neither replaces spending limits at the LLM provider.
     max_llm_calls_per_resource: int = 5
     max_attempts: int = 5
 

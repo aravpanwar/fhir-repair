@@ -15,7 +15,7 @@ import re
 import time
 import uuid
 from collections.abc import Iterator
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -32,11 +32,25 @@ from fhir_repair.core.dispatcher import (
 from fhir_repair.core.fhirpath import delete_at_path, set_at_path
 from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, RepairResult, ValidationError
+from fhir_repair.strategies.base import refused
 
 if TYPE_CHECKING:
     from fhir_repair.llm.base import LLMProvider
     from fhir_repair.strategies.registry import StrategyRegistry
     from fhir_repair.validators.base import Validator
+
+
+@dataclass
+class _LLMBudget:
+    """LLM strategy invocations left for the resource being repaired.
+
+    Made fresh for each `repair()` call and passed down, rather than kept on
+    the Repairer, because the HTTP service shares one Repairer across
+    threads. An invocation counts once however many times the strategy
+    retries a failed call inside it.
+    """
+
+    calls_left: int
 
 
 class Repairer:
@@ -137,13 +151,14 @@ class Repairer:
             )
 
         initial = errors
+        budget = _LLMBudget(self._config.limits.max_llm_calls_per_resource)
         with self._open_audit(working) as audit_writer:
             for _ in range(self._config.limits.max_attempts):
                 plan = build_plan(errors, self._resolver)
                 if not plan.batches:
                     break
 
-                actions, after = self._run_plan(working, plan, errors, audit_writer)
+                actions, after = self._run_plan(working, plan, errors, audit_writer, budget)
                 audit.extend(actions)
 
                 # An attempt that leaves the error set as it found it would
@@ -180,6 +195,7 @@ class Repairer:
         plan: DispatchPlan,
         errors: list[ValidationError],
         audit_writer: AuditWriter,
+        budget: _LLMBudget,
     ) -> tuple[list[RepairAction], list[ValidationError]]:
         """Execute a plan against `resource`, mutating it in place.
 
@@ -192,7 +208,7 @@ class Repairer:
 
         for batch in plan.batches:
             before_state = snapshot(resource)
-            actions = [self._invoke_chain(chain, resource, error) for chain, error in batch]
+            actions = [self._invoke_chain(chain, resource, error, budget) for chain, error in batch]
             touched = {action.written_path for action in actions if action.risk != "refused"}
 
             # Strategies only change the resource when they do not refuse,
@@ -261,6 +277,7 @@ class Repairer:
         chain: list[str],
         resource: dict[str, Any],
         error: ValidationError,
+        budget: _LLMBudget,
     ) -> RepairAction:
         """Try each strategy in `chain` until one does not refuse.
 
@@ -272,7 +289,7 @@ class Repairer:
         """
         last_action: RepairAction | None = None
         for strategy_id in chain:
-            action = self._invoke_strategy(strategy_id, resource, error)
+            action = self._invoke_strategy(strategy_id, resource, error, budget)
             if action.risk != "refused":
                 return action
             last_action = action
@@ -287,23 +304,23 @@ class Repairer:
         strategy_id: str,
         resource: dict[str, Any],
         error: ValidationError,
+        budget: _LLMBudget,
     ) -> RepairAction:
-        """Look up and run a single strategy, enforcing the hallucination guard."""
+        """Look up and run a single strategy, enforcing the guard and the LLM budget."""
         strategy = self._registry.get(strategy_id)
 
-        if not self._guard.is_allowed(strategy.permission):
-            return RepairAction(
-                error=error,
-                strategy=strategy.name,
-                strategy_version=strategy.version,
-                risk="refused",
-                permission_used=strategy.permission,
-                before=None,
-                after=None,
-                explanation=(
-                    f"Refused: hallucination guard denies permission {strategy.permission!r}."
-                ),
+        def refuse(reason: str) -> RepairAction:
+            return refused(
+                error, strategy.name, strategy.version, strategy.permission, None, reason
             )
+
+        if not self._guard.is_allowed(strategy.permission):
+            return refuse(f"hallucination guard denies permission {strategy.permission!r}")
+
+        if _is_llm(strategy_id):
+            if budget.calls_left <= 0:
+                return refuse("the LLM call limit for this resource is used up")
+            budget.calls_left -= 1
 
         return strategy.apply(resource, error)
 
