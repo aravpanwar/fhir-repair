@@ -185,6 +185,11 @@ def test_build_llm_provider_bedrock(monkeypatch):
     fake_module = types.ModuleType("boto3")
     fake_module.client = _client  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "boto3", fake_module)
+    # botocore ships with boto3, which the test environment may not have.
+    fake_config = types.ModuleType("botocore.config")
+    fake_config.Config = lambda **kwargs: kwargs  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "botocore", types.ModuleType("botocore"))
+    monkeypatch.setitem(sys.modules, "botocore.config", fake_config)
     monkeypatch.setenv("AWS_REGION", "eu-west-2")
 
     config = LLMConfig(provider="bedrock", model="anthropic.claude-test-v1:0")
