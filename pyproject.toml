@@ -137,7 +137,6 @@ markers = [
 [tool.coverage.run]
 source = ["fhir_repair"]
 omit = [
-    "fhir_repair/cli/main.py",
     "*/tests/*",
 ]
 
