@@ -10,8 +10,10 @@ This module contains no strategy logic. Strategies live under
 
 from __future__ import annotations
 
+import copy
 import time
 import uuid
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -211,58 +213,60 @@ class Repairer:
             before_state = snapshot(resource)
             before_errors = self._validator.validate(resource, self._config.target_profile)
 
-            batch_actions: list[RepairAction] = []
-            touched: set[str] = set()
-
-            for chain, error in batch:
-                action = self._invoke_chain(chain, resource, error)
-                batch_actions.append(action)
-                touched.add(error.location)
+            actions = [self._invoke_chain(chain, resource, error) for chain, error in batch]
+            touched = {action.written_path for action in actions if action.risk != "refused"}
 
             after_errors = self._validator.validate(resource, self._config.target_profile)
-            regressions = detect_regressions(before_errors, after_errors, touched)
+            if detect_regressions(before_errors, after_errors, touched):
+                _restore(resource, before_state)
+                actions = self._replay_one_at_a_time(resource, actions, before_errors)
 
-            if regressions:
-                # Roll back, retry sequentially. Drop any action that still
-                # regresses on its own.
-                resource.clear()
-                resource.update(before_state)
-
-                for action in batch_actions:
-                    pre_seq = self._validator.validate(resource, self._config.target_profile)
-                    self._reapply_action(resource, action)
-                    post_seq = self._validator.validate(resource, self._config.target_profile)
-                    seq_regress = detect_regressions(pre_seq, post_seq, {action.error.location})
-                    if seq_regress:
-                        # Undo this action and record it as refused.
-                        resource.clear()
-                        resource.update(before_state)
-                        refused = RepairAction(
-                            error=action.error,
-                            strategy=action.strategy,
-                            strategy_version=action.strategy_version,
-                            risk="refused",
-                            permission_used=action.permission_used,
-                            before=action.before,
-                            after=action.before,
-                            explanation=(
-                                f"Refused after rollback: caused regression at "
-                                f"{action.error.location}."
-                            ),
-                            llm=action.llm,
-                        )
-                        audit_writer.write_action(refused)
-                        all_actions.append(refused)
-                    else:
-                        before_state = snapshot(resource)
-                        audit_writer.write_action(action)
-                        all_actions.append(action)
-            else:
-                for action in batch_actions:
-                    audit_writer.write_action(action)
-                all_actions.extend(batch_actions)
+            for action in actions:
+                audit_writer.write_action(action)
+            all_actions.extend(actions)
 
         return all_actions
+
+    def _replay_one_at_a_time(
+        self,
+        resource: dict[str, Any],
+        actions: list[RepairAction],
+        errors: list[ValidationError],
+    ) -> list[RepairAction]:
+        """Re-apply a rolled-back batch one action at a time.
+
+        `errors` must describe `resource` as it is on entry. Each action is
+        replayed from its recorded result rather than by running the
+        strategy again: an LLM strategy would spend a second call and could
+        answer differently from what the audit log records. An action that
+        still causes a regression on its own, or no longer applies, is undone
+        and recorded as refused, and the replay carries on from the state
+        before it.
+        """
+        replayed: list[RepairAction] = []
+        for action in actions:
+            if action.risk == "refused":
+                replayed.append(action)
+                continue
+
+            checkpoint = snapshot(resource)
+            try:
+                _replay(resource, action)
+            except (KeyError, IndexError, TypeError, ValueError) as exc:
+                _restore(resource, checkpoint)
+                replayed.append(_refuse_after_rollback(action, f"could not be replayed: {exc}"))
+                continue
+
+            after = self._validator.validate(resource, self._config.target_profile)
+            if detect_regressions(errors, after, {action.written_path}):
+                _restore(resource, checkpoint)
+                replayed.append(
+                    _refuse_after_rollback(action, f"caused a regression at {action.written_path}")
+                )
+            else:
+                errors = after
+                replayed.append(action)
+        return replayed
 
     def _invoke_chain(
         self,
@@ -315,24 +319,6 @@ class Repairer:
 
         return strategy.apply(resource, error)
 
-    def _reapply_action(self, resource: dict[str, Any], action: RepairAction) -> None:
-        """Re-apply an already-recorded action to a fresh resource snapshot.
-
-        Used during sequential retry after a regression rollback. We write
-        the recorded `after` value directly rather than invoking the strategy
-        again. Re-invoking an LLM strategy would spend a second call and could
-        return a different value than the one already in the audit log,
-        leaving the resource and its recorded action out of step.
-        """
-        if action.risk == "refused":
-            return
-        if action.removed:
-            # Replaying a removal as a write would put a literal null where
-            # the element used to be, which is not what the strategy did.
-            delete_at_path(resource, action.error.location)
-            return
-        set_at_path(resource, action.error.location, action.after)
-
     def _open_audit(self, resource: dict[str, Any]) -> AuditWriter:
         """Build the AuditWriter for a single resource."""
         resource_type = resource.get("resourceType", "Unknown")
@@ -368,6 +354,42 @@ class Repairer:
             "prompt_version": self._config.llm.prompt_version,
             "guard": self._guard.to_dict(),
         }
+
+
+def _restore(resource: dict[str, Any], state: dict[str, Any]) -> None:
+    """Put `resource` back to `state` in place.
+
+    Copies rather than adopting `state`'s nested objects: a later in-place
+    write would otherwise change the saved state too, and a second restore
+    to it would bring the write back.
+    """
+    resource.clear()
+    resource.update(snapshot(state))
+
+
+def _replay(resource: dict[str, Any], action: RepairAction) -> None:
+    """Re-apply a recorded action at the path it originally wrote.
+
+    A removal is replayed as a deletion: writing its recorded `after`
+    would put a literal null where the element was.
+    """
+    if action.removed:
+        if not delete_at_path(resource, action.written_path):
+            raise ValueError(f"nothing left to remove at {action.written_path}")
+        return
+    # Copied so the resource and the audit record do not share an object
+    # that a later fix could change in place.
+    set_at_path(resource, action.written_path, copy.deepcopy(action.after))
+
+
+def _refuse_after_rollback(action: RepairAction, reason: str) -> RepairAction:
+    return replace(
+        action,
+        risk="refused",
+        after=action.before,
+        removed=False,
+        explanation=f"Refused after rollback: {reason}.",
+    )
 
 
 def _dedupe_errors(errors: list[ValidationError]) -> list[ValidationError]:
