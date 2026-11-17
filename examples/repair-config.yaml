@@ -105,8 +105,9 @@ hallucination_guard:
   allow_change_existing_clinical_value: false
 
 # Loop bounds. `max_attempts` caps how many validate-fix-revalidate
-# iterations we run; `max_llm_calls_per_resource` caps the LLM calls
-# inside that loop. Both are correctness limits, not cost limits.
+# iterations we run; `max_llm_calls_per_resource` caps how many times an
+# LLM strategy is invoked for one resource, after which LLM strategies
+# refuse. Keep a spending limit at your LLM provider as well.
 limits:
   max_llm_calls_per_resource: 5
   max_attempts: 5

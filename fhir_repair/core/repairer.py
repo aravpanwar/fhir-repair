@@ -10,8 +10,12 @@ This module contains no strategy logic. Strategies live under
 
 from __future__ import annotations
 
+import copy
+import re
 import time
 import uuid
+from collections.abc import Iterator
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -28,11 +32,25 @@ from fhir_repair.core.dispatcher import (
 from fhir_repair.core.fhirpath import delete_at_path, set_at_path
 from fhir_repair.core.guard import HallucinationGuard
 from fhir_repair.core.models import RepairAction, RepairResult, ValidationError
+from fhir_repair.strategies.base import refused
 
 if TYPE_CHECKING:
     from fhir_repair.llm.base import LLMProvider
     from fhir_repair.strategies.registry import StrategyRegistry
     from fhir_repair.validators.base import Validator
+
+
+@dataclass
+class _LLMBudget:
+    """LLM strategy invocations left for the resource being repaired.
+
+    Made fresh for each `repair()` call and passed down, rather than kept on
+    the Repairer, because the HTTP service shares one Repairer across
+    threads. An invocation counts once however many times the strategy
+    retries a failed call inside it.
+    """
+
+    calls_left: int
 
 
 class Repairer:
@@ -65,20 +83,22 @@ class Repairer:
         # us build one from config; either way we fail loudly at construction
         # time if the references can't be satisfied, rather than discovering
         # the mismatch mid-repair.
-        if self._dispatch_uses_llm():
+        if any(_is_llm(sid) for _, sid in self._dispatch_entries()):
             self._register_llm_strategies(llm_provider)
 
-    def _dispatch_uses_llm(self) -> bool:
-        """True if any dispatch table value names an LLM strategy.
+        # A misspelled id would otherwise surface as a KeyError partway
+        # through a repair, after the audit file is open and other fixes
+        # have been applied.
+        known = set(self._registry.names())
+        for code, sid in self._dispatch_entries():
+            if sid != "refuse" and sid not in known:
+                raise ValueError(f"unknown strategy {sid!r} in the dispatch entry for {code!r}")
 
-        Handles both single-string entries and chain (list-of-string)
-        entries.
-        """
-        for value in self._config.strategies.values():
-            ids = [value] if isinstance(value, str) else list(value)
-            if any(sid == "llm" or sid.startswith("llm.") for sid in ids):
-                return True
-        return False
+    def _dispatch_entries(self) -> Iterator[tuple[str, str]]:
+        """Every (error code, strategy id) pair in the dispatch table."""
+        for code, value in self._config.strategies.items():
+            for sid in [value] if isinstance(value, str) else value:
+                yield code, sid
 
     def _register_llm_strategies(
         self,
@@ -117,70 +137,46 @@ class Repairer:
         start = time.perf_counter()
         working = snapshot(resource)
         audit: list[RepairAction] = []
-        unresolved: list[ValidationError] = []
 
         # Validate once up front. If the resource is already valid, return
         # without touching the audit file.
-        errors = self._validator.validate(working, self._config.target_profile)
+        errors = self._validate(working)
         if not errors:
-            duration_ms = int((time.perf_counter() - start) * 1000)
             return RepairResult(
                 fixed_resource=working,
                 audit=[],
                 unresolved=[],
-                duration_ms=duration_ms,
+                duration_ms=_elapsed_ms(start),
                 metadata=self._metadata(),
             )
 
-        total_errors = len(errors)
-        attempts = self._config.limits.max_attempts
-        prev_errors: list[ValidationError] = []
-
+        initial = errors
+        budget = _LLMBudget(self._config.limits.max_llm_calls_per_resource)
         with self._open_audit(working) as audit_writer:
-            for attempt in range(attempts):
+            for _ in range(self._config.limits.max_attempts):
                 plan = build_plan(errors, self._resolver)
-
-                if not plan.batches and not plan.unmapped:
-                    # Nothing left to do.
+                if not plan.batches:
                     break
 
-                actions = self._run_plan(working, plan, audit_writer)
+                actions, after = self._run_plan(working, plan, errors, audit_writer, budget)
                 audit.extend(actions)
 
-                # Anything the resolver could not map is unresolved unless
-                # a later attempt picks it up (it will not, but the loop
-                # structure makes that explicit).
-                unresolved.extend(plan.unmapped)
-
-                # Re-validate. If clean, we are done.
-                errors = self._validator.validate(working, self._config.target_profile)
-                if not errors:
+                # An attempt that leaves the error set as it found it would
+                # make the same moves again, so stop rather than spend another
+                # round of strategy and validator calls on it.
+                stuck = is_stuck(errors, after)
+                errors = after
+                if not errors or stuck:
                     break
 
-                # Stuck detector: if the error set has not changed, give up.
-                if attempt > 0 and is_stuck(prev_errors, errors):
-                    break
-                prev_errors = errors
-
-            else:
-                # The for-loop exhausted attempts without breaking. Anything
-                # still in `errors` becomes unresolved.
-                unresolved.extend(errors)
-
-            # Anything still failing validation at exit becomes unresolved.
-            # Extend unconditionally: when the loop exits via the stuck
-            # detector with unmapped errors already collected, the guard
-            # `not unresolved` would otherwise drop the mapped-but-unfixed
-            # errors. `_dedupe_errors` removes any overlap.
-            if errors:
-                unresolved.extend(errors)
-
-            unresolved = _dedupe_errors(unresolved)
-            duration_ms = int((time.perf_counter() - start) * 1000)
-
+            # `errors` always describes the resource as returned, so it is
+            # the unresolved list: an error that a later fix cleared up is
+            # not reported, and one a fix uncovered is.
+            unresolved = _dedupe_errors(errors)
+            duration_ms = _elapsed_ms(start)
             audit_writer.write_summary(
-                total_errors=total_errors,
-                fixed=total_errors - len(unresolved),
+                total_errors=len(initial),
+                fixed=_count_fixed(initial, unresolved),
                 unresolved=len(unresolved),
                 duration_ms=duration_ms,
             )
@@ -197,78 +193,91 @@ class Repairer:
         self,
         resource: dict[str, Any],
         plan: DispatchPlan,
+        errors: list[ValidationError],
         audit_writer: AuditWriter,
-    ) -> list[RepairAction]:
+        budget: _LLMBudget,
+    ) -> tuple[list[RepairAction], list[ValidationError]]:
         """Execute a plan against `resource`, mutating it in place.
 
-        Each batch runs in declared order. After each batch, we re-validate
-        and check for regressions. Regressions trigger a rollback of the
-        batch and a sequential retry.
+        `errors` must describe `resource` as it is on entry. Each batch runs
+        in declared order and is re-validated once; a regression rolls the
+        batch back and replays it one action at a time. Returns the actions
+        taken and the errors on the resource afterwards.
         """
         all_actions: list[RepairAction] = []
 
         for batch in plan.batches:
             before_state = snapshot(resource)
-            before_errors = self._validator.validate(resource, self._config.target_profile)
+            actions = [self._invoke_chain(chain, resource, error, budget) for chain, error in batch]
+            touched = {action.written_path for action in actions if action.risk != "refused"}
 
-            batch_actions: list[RepairAction] = []
-            touched: set[str] = set()
+            # Strategies only change the resource when they do not refuse,
+            # so a batch that wrote nothing leaves `errors` accurate and
+            # needs no validator call.
+            if touched:
+                after = self._validate(resource)
+                if detect_regressions(errors, after, touched):
+                    _restore(resource, before_state)
+                    actions, after = self._replay_one_at_a_time(resource, actions, errors)
+                errors = after
 
-            for chain, error in batch:
-                action = self._invoke_chain(chain, resource, error)
-                batch_actions.append(action)
-                touched.add(error.location)
+            for action in actions:
+                audit_writer.write_action(action)
+            all_actions.extend(actions)
 
-            after_errors = self._validator.validate(resource, self._config.target_profile)
-            regressions = detect_regressions(before_errors, after_errors, touched)
+        return all_actions, errors
 
-            if regressions:
-                # Roll back, retry sequentially. Drop any action that still
-                # regresses on its own.
-                resource.clear()
-                resource.update(before_state)
+    def _replay_one_at_a_time(
+        self,
+        resource: dict[str, Any],
+        actions: list[RepairAction],
+        errors: list[ValidationError],
+    ) -> tuple[list[RepairAction], list[ValidationError]]:
+        """Re-apply a rolled-back batch one action at a time.
 
-                for action in batch_actions:
-                    pre_seq = self._validator.validate(resource, self._config.target_profile)
-                    self._reapply_action(resource, action)
-                    post_seq = self._validator.validate(resource, self._config.target_profile)
-                    seq_regress = detect_regressions(pre_seq, post_seq, {action.error.location})
-                    if seq_regress:
-                        # Undo this action and record it as refused.
-                        resource.clear()
-                        resource.update(before_state)
-                        refused = RepairAction(
-                            error=action.error,
-                            strategy=action.strategy,
-                            strategy_version=action.strategy_version,
-                            risk="refused",
-                            permission_used=action.permission_used,
-                            before=action.before,
-                            after=action.before,
-                            explanation=(
-                                f"Refused after rollback: caused regression at "
-                                f"{action.error.location}."
-                            ),
-                            llm=action.llm,
-                        )
-                        audit_writer.write_action(refused)
-                        all_actions.append(refused)
-                    else:
-                        before_state = snapshot(resource)
-                        audit_writer.write_action(action)
-                        all_actions.append(action)
+        `errors` must describe `resource` as it is on entry; the errors
+        after the replay are returned with the actions. Each action is
+        replayed from its recorded result rather than by running the
+        strategy again: an LLM strategy would spend a second call and could
+        answer differently from what the audit log records. An action that
+        still causes a regression on its own, or no longer applies, is undone
+        and recorded as refused, and the replay carries on from the state
+        before it.
+        """
+        replayed: list[RepairAction] = []
+        for action in actions:
+            if action.risk == "refused":
+                replayed.append(action)
+                continue
+
+            checkpoint = snapshot(resource)
+            try:
+                _replay(resource, action)
+            except (KeyError, IndexError, TypeError, ValueError) as exc:
+                _restore(resource, checkpoint)
+                replayed.append(_refuse_after_rollback(action, f"could not be replayed: {exc}"))
+                continue
+
+            after = self._validate(resource)
+            if detect_regressions(errors, after, {action.written_path}):
+                _restore(resource, checkpoint)
+                replayed.append(
+                    _refuse_after_rollback(action, f"caused a regression at {action.written_path}")
+                )
             else:
-                for action in batch_actions:
-                    audit_writer.write_action(action)
-                all_actions.extend(batch_actions)
+                errors = after
+                replayed.append(action)
+        return replayed, errors
 
-        return all_actions
+    def _validate(self, resource: dict[str, Any]) -> list[ValidationError]:
+        return self._validator.validate(resource, self._config.target_profile)
 
     def _invoke_chain(
         self,
         chain: list[str],
         resource: dict[str, Any],
         error: ValidationError,
+        budget: _LLMBudget,
     ) -> RepairAction:
         """Try each strategy in `chain` until one does not refuse.
 
@@ -280,7 +289,7 @@ class Repairer:
         """
         last_action: RepairAction | None = None
         for strategy_id in chain:
-            action = self._invoke_strategy(strategy_id, resource, error)
+            action = self._invoke_strategy(strategy_id, resource, error, budget)
             if action.risk != "refused":
                 return action
             last_action = action
@@ -295,43 +304,25 @@ class Repairer:
         strategy_id: str,
         resource: dict[str, Any],
         error: ValidationError,
+        budget: _LLMBudget,
     ) -> RepairAction:
-        """Look up and run a single strategy, enforcing the hallucination guard."""
+        """Look up and run a single strategy, enforcing the guard and the LLM budget."""
         strategy = self._registry.get(strategy_id)
 
-        if not self._guard.is_allowed(strategy.permission):
-            return RepairAction(
-                error=error,
-                strategy=strategy.name,
-                strategy_version=strategy.version,
-                risk="refused",
-                permission_used=strategy.permission,
-                before=None,
-                after=None,
-                explanation=(
-                    f"Refused: hallucination guard denies permission {strategy.permission!r}."
-                ),
+        def refuse(reason: str) -> RepairAction:
+            return refused(
+                error, strategy.name, strategy.version, strategy.permission, None, reason
             )
 
+        if not self._guard.is_allowed(strategy.permission):
+            return refuse(f"hallucination guard denies permission {strategy.permission!r}")
+
+        if _is_llm(strategy_id):
+            if budget.calls_left <= 0:
+                return refuse("the LLM call limit for this resource is used up")
+            budget.calls_left -= 1
+
         return strategy.apply(resource, error)
-
-    def _reapply_action(self, resource: dict[str, Any], action: RepairAction) -> None:
-        """Re-apply an already-recorded action to a fresh resource snapshot.
-
-        Used during sequential retry after a regression rollback. We write
-        the recorded `after` value directly rather than invoking the strategy
-        again. Re-invoking an LLM strategy would spend a second call and could
-        return a different value than the one already in the audit log,
-        leaving the resource and its recorded action out of step.
-        """
-        if action.risk == "refused":
-            return
-        if action.removed:
-            # Replaying a removal as a write would put a literal null where
-            # the element used to be, which is not what the strategy did.
-            delete_at_path(resource, action.error.location)
-            return
-        set_at_path(resource, action.error.location, action.after)
 
     def _open_audit(self, resource: dict[str, Any]) -> AuditWriter:
         """Build the AuditWriter for a single resource."""
@@ -345,9 +336,8 @@ class Repairer:
         # second.
         ts = time.strftime("%Y%m%dT%H%M%S")
         suffix = uuid.uuid4().hex[:6]
-        path = Path(self._config.logging.audit_destination) / (
-            f"{resource_type}-{resource_id}-{ts}-{suffix}.audit.jsonl"
-        )
+        name = f"{_file_safe(resource_type)}-{_file_safe(resource_id)}-{ts}-{suffix}"
+        path = Path(self._config.logging.audit_destination) / f"{name}.audit.jsonl"
 
         return AuditWriter(
             destination=path,
@@ -368,6 +358,70 @@ class Repairer:
             "prompt_version": self._config.llm.prompt_version,
             "guard": self._guard.to_dict(),
         }
+
+
+def _restore(resource: dict[str, Any], state: dict[str, Any]) -> None:
+    """Put `resource` back to `state` in place.
+
+    Copies rather than adopting `state`'s nested objects: a later in-place
+    write would otherwise change the saved state too, and a second restore
+    to it would bring the write back.
+    """
+    resource.clear()
+    resource.update(snapshot(state))
+
+
+def _replay(resource: dict[str, Any], action: RepairAction) -> None:
+    """Re-apply a recorded action at the path it originally wrote.
+
+    A removal is replayed as a deletion: writing its recorded `after`
+    would put a literal null where the element was.
+    """
+    if action.removed:
+        if not delete_at_path(resource, action.written_path):
+            raise ValueError(f"nothing left to remove at {action.written_path}")
+        return
+    # Copied so the resource and the audit record do not share an object
+    # that a later fix could change in place.
+    set_at_path(resource, action.written_path, copy.deepcopy(action.after))
+
+
+def _refuse_after_rollback(action: RepairAction, reason: str) -> RepairAction:
+    return replace(
+        action,
+        risk="refused",
+        after=action.before,
+        removed=False,
+        explanation=f"Refused after rollback: {reason}.",
+    )
+
+
+# A valid FHIR id only uses these characters, but the id comes from the
+# input (over the network, for the HTTP service), so it cannot be trusted
+# not to carry a path separator or a name Windows rejects.
+_UNSAFE_IN_FILENAME = re.compile(r"[^A-Za-z0-9.-]")
+
+
+def _file_safe(value: str) -> str:
+    return _UNSAFE_IN_FILENAME.sub("_", value)[:64]
+
+
+def _is_llm(strategy_id: str) -> bool:
+    return strategy_id == "llm" or strategy_id.startswith("llm.")
+
+
+def _elapsed_ms(start: float) -> int:
+    return int((time.perf_counter() - start) * 1000)
+
+
+def _count_fixed(initial: list[ValidationError], remaining: list[ValidationError]) -> int:
+    """How many of the input's errors are gone from the output.
+
+    Counted per error rather than as `initial - remaining`, which goes
+    negative when a fix uncovers more errors than it cleared.
+    """
+    left = {(e.code, e.location) for e in remaining}
+    return len({(e.code, e.location) for e in initial} - left)
 
 
 def _dedupe_errors(errors: list[ValidationError]) -> list[ValidationError]:

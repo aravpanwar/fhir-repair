@@ -183,6 +183,7 @@ class InvariantStrategy:
             before=before,
             after=None,
             removed=True,
+            path=location,
             explanation=(
                 f"LLM ({completion.model}) resolved the invariant by removing {location}."
             ),

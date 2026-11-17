@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Rollback after a regression left the refused fix in the output, replayed
+  an identifier system fix over the whole Identifier, and raised when
+  replaying the removal of an element reported against the resource.
+- An error no strategy could fix ran its strategy chain twice, so an LLM
+  strategy made a second paid call for nothing.
+- Errors cleared by a later fix were still reported as unresolved, and the
+  audit summary's `fixed` count could go negative.
+- A misspelled strategy id in the dispatch table raised partway through a
+  repair instead of when the `Repairer` was built.
+- A resource id containing path separators could place its audit log
+  outside the audit directory.
+- `limits.max_llm_calls_per_resource` was never enforced.
+
+### Changed
+
+- A simple fix costs half as many validator calls: the loop reuses the
+  error list it already has instead of validating the same state again.
+
 ## 0.2.0 - 2026-10-08
 
 ### Added

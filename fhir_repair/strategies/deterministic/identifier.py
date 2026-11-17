@@ -95,6 +95,7 @@ def apply(resource: dict[str, Any], error: ValidationError) -> RepairAction:
         before=before,
         after=after,
         explanation=f"Canonicalized identifier system {before!r} to {after!r}.",
+        path=location,
     )
 
 

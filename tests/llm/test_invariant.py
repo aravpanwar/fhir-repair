@@ -140,6 +140,7 @@ def test_removes_the_named_element():
     assert action.risk != "refused"
     assert action.removed is True
     assert action.after is None
+    assert action.written_path == "Observation.dataAbsentReason"
     assert action.llm["provider"] == "stub"
 
 

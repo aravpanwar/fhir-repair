@@ -123,3 +123,75 @@ def test_unwritable_error_location_is_refused():
 
     assert action.risk == "refused"
     assert resource == {"resourceType": "Encounter", "status": "finished"}
+
+
+class _FlakyProvider(_StubProvider):
+    """Raises `failure` for the first `failures` calls, then answers."""
+
+    def __init__(self, failures: int, failure: Exception) -> None:
+        super().__init__('{"value": "male"}')
+        self.calls = 0
+        self._failures = failures
+        self._failure = failure
+
+    def complete(self, segments: list[PromptSegment], **kwargs: object) -> Completion:
+        self.calls += 1
+        if self.calls <= self._failures:
+            raise self._failure
+        return super().complete(segments, **kwargs)
+
+
+def _flaky_strategy(provider: _FlakyProvider, waits: list[float], monkeypatch) -> LLMStrategy:
+    monkeypatch.setattr("fhir_repair.strategies.llm.runner.time.sleep", waits.append)
+    return LLMStrategy(
+        name="llm",
+        version="1.0.0",
+        permission="allow_bind_required_valueset",
+        risk="medium",
+        prompt_path=_PROMPT,
+        prompt_version="v1",
+        provider=provider,
+        max_retries=3,
+        backoff_base_s=1.0,
+        backoff_max_s=3.0,
+    )
+
+
+def test_transient_failures_are_retried_with_capped_backoff(monkeypatch):
+    provider = _FlakyProvider(3, ConnectionError("reset"))
+    waits: list[float] = []
+    resource = {"resourceType": "Patient", "gender": "M"}
+
+    action = _flaky_strategy(provider, waits, monkeypatch).apply(resource, _error())
+
+    assert action.risk != "refused"
+    assert resource["gender"] == "male"
+    assert provider.calls == 4
+    # Full jitter keeps each wait between half and all of 1, 2, then 4
+    # capped to 3 seconds.
+    for wait, ceiling in zip(waits, [1.0, 2.0, 3.0], strict=True):
+        assert ceiling / 2 <= wait <= ceiling
+
+
+def test_retries_give_up_with_a_refusal(monkeypatch):
+    provider = _FlakyProvider(10, ConnectionError("reset"))
+    resource = {"resourceType": "Patient", "gender": "M"}
+
+    action = _flaky_strategy(provider, [], monkeypatch).apply(resource, _error())
+
+    assert action.risk == "refused"
+    assert resource["gender"] == "M"
+    assert provider.calls == 4
+
+
+def test_permanent_errors_are_not_retried(monkeypatch):
+    provider = _FlakyProvider(1, ValueError("bad request"))
+    waits: list[float] = []
+
+    action = _flaky_strategy(provider, waits, monkeypatch).apply(
+        {"resourceType": "Patient", "gender": "M"}, _error()
+    )
+
+    assert action.risk == "refused"
+    assert provider.calls == 1
+    assert waits == []

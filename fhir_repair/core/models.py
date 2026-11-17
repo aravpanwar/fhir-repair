@@ -66,6 +66,19 @@ class RepairAction:
     # Not part of the sealed v1 audit schema; the writer ignores it.
     removed: bool = False
 
+    # Where the change was written, when that differs from the error
+    # location. The validator does not always report an error on the field
+    # at fault: an identifier system error lands on the Identifier, and an
+    # invariant failure lands on the whole resource. Rollback replays the
+    # action here, and regression checks scope to it. Not part of the audit
+    # schema either.
+    path: str | None = None
+
+    @property
+    def written_path(self) -> str:
+        """The path this action changed."""
+        return self.path or self.error.location
+
 
 @dataclass
 class RepairResult:
