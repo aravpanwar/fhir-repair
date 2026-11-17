@@ -127,8 +127,8 @@ the run:
 | Field | Type | Description |
 |---|---|---|
 | `total_errors` | integer | Number of validation errors on the input. |
-| `fixed` | integer | Errors resolved by repair actions. |
-| `unresolved` | integer | Errors left after all attempts. |
+| `fixed` | integer | Input errors no longer reported on the output, matched by code and location. |
+| `unresolved` | integer | Errors on the output. A fix can uncover errors the input did not show, so this can exceed `total_errors - fixed`. |
 | `duration_ms` | integer | Total wall-clock duration of the repair. |
 
 ## Validating an audit log

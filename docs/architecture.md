@@ -112,22 +112,32 @@ list. If the new error list contains errors that:
 - did not exist before the batch ran, and
 - are at paths that a just-applied action touched
 
-then the batch is rolled back, and each action retries sequentially with
-re-validation between actions. An action that still produces a regression on
-sequential retry is dropped and recorded with `risk: "refused"` and a
-description of the regression in `explanation`.
+then the batch is rolled back, and each action is replayed on its own with
+re-validation between actions. Replay writes the action's recorded result
+at the path it originally wrote (which can differ from the error location:
+an identifier system fix writes below the reported Identifier) and does not
+run the strategy again, so an LLM is not called twice. An action that still
+produces a regression on its own, or no longer applies, is undone and
+recorded with `risk: "refused"` and the reason in `explanation`.
+
+The paths an action touched are the paths it wrote, so a refused action
+never counts towards a regression. A batch in which every action refused
+changed nothing and is not re-validated.
 
 ### 5. Termination
 
-Two budgets bound the loop:
+Three limits bound the loop:
 
 - `max_attempts` (default 5): caps the number of validate-fix-revalidate
   iterations.
-- Stuck-detector: if two consecutive iterations produce the exact same error
-  set, halt and return whatever is in `unresolved`.
+- Stuck detector: an attempt that leaves the error set (by code and
+  location) as it found it ends the loop, since another attempt would make
+  the same moves.
+- `max_llm_calls_per_resource` (default 5): caps LLM strategy invocations
+  for one resource. Once it is spent, LLM strategies refuse.
 
-This avoids infinite loops when a strategy "succeeds" but produces output
-that re-triggers the same error.
+Whatever the last validation reports is the unresolved list, so an error a
+later fix cleared is not reported, and one a fix uncovered is.
 
 ## Hallucination guard
 
