@@ -62,14 +62,14 @@ def test_endpoint_is_required(fake_openai, monkeypatch):
     """Defaulting would ship clinical data to api.openai.com."""
     monkeypatch.delenv("LLM_ENDPOINT", raising=False)
 
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     with pytest.raises(ValueError, match="endpoint"):
         OnPremProvider(model="llama-3.1-8b")
 
 
 def test_model_is_required(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     with pytest.raises(ValueError, match="model"):
         OnPremProvider(endpoint="http://localhost:8000/v1")
@@ -78,7 +78,7 @@ def test_model_is_required(fake_openai):
 def test_endpoint_from_environment(fake_openai, monkeypatch):
     monkeypatch.setenv("LLM_ENDPOINT", "http://vllm.internal:8000/v1")
 
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     OnPremProvider(model="llama-3.1-8b")
 
@@ -89,7 +89,7 @@ def test_runs_without_an_api_key(fake_openai, monkeypatch):
     """Unauthenticated local servers are the common case."""
     monkeypatch.delenv("LLM_API_KEY", raising=False)
 
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
 
@@ -98,7 +98,7 @@ def test_runs_without_an_api_key(fake_openai, monkeypatch):
 
 
 def test_api_key_is_used_when_supplied(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     OnPremProvider(
         endpoint="http://localhost:8000/v1",
@@ -110,7 +110,7 @@ def test_api_key_is_used_when_supplied(fake_openai):
 
 
 def test_segments_map_to_messages(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     provider = OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
     provider.complete(
@@ -128,7 +128,7 @@ def test_segments_map_to_messages(fake_openai):
 
 
 def test_completion_reports_token_counts(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     provider = OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
     completion = provider.complete([PromptSegment(role="user", text="hi", stable=False)])
@@ -140,7 +140,7 @@ def test_completion_reports_token_counts(fake_openai):
 
 
 def test_missing_user_segment_raises(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     provider = OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
     with pytest.raises(ValueError, match="user segment"):
@@ -148,14 +148,14 @@ def test_missing_user_segment_raises(fake_openai):
 
 
 def test_supports_caching_is_false(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     provider = OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
     assert provider.supports_caching() is False
 
 
 def test_sdk_retries_are_off(fake_openai):
-    from fhir_repair.llm.on_prem import OnPremProvider
+    from fhir_repair.llm.openai import OnPremProvider
 
     OnPremProvider(endpoint="http://localhost:8000/v1", model="llama-3.1-8b")
 

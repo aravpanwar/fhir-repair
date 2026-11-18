@@ -84,7 +84,7 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
         )
 
     if provider == "on-prem":
-        from fhir_repair.llm.on_prem import OnPremProvider
+        from fhir_repair.llm.openai import OnPremProvider
 
         # No model default: the name has to match whatever the local server
         # serves, and guessing would produce a confusing 404 from the
