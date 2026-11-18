@@ -198,6 +198,4 @@ makes no claim to be, HIPAA-certified.
 ## Acknowledgements
 
 This project uses [Synthea](https://github.com/synthetichealth/synthea) for
-synthetic test data, the [HAPI FHIR](https://hapifhir.io/) validator, and
-[fhirpathpy](https://github.com/beda-software/fhirpath-py) for FHIRPath
-evaluation.
+synthetic test data and the [HAPI FHIR](https://hapifhir.io/) validator.

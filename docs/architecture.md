@@ -61,7 +61,7 @@ Output:
 |---|---|---|---|
 | Core repairer | `fhir_repair.core.repairer` | Orchestrates the loop, manages budget, writes audit log | No |
 | Dispatcher | `fhir_repair.core.dispatcher` | Strategy lookup, leaf-first ordering, regression rollback | No |
-| FHIRPath utility | `fhir_repair.core.fhirpath` | Wraps `fhirpathpy` for evaluation and assignment | No |
+| FHIRPath utility | `fhir_repair.core.fhirpath` | Reads, writes and removes the values at HAPI's error locations | No |
 | Hallucination guard | `fhir_repair.core.guard` | Five independent permissions checked before each strategy runs | No |
 | Audit writer | `fhir_repair.core.audit` | JSON Lines output with sealed v1 schema | Output destination configurable |
 | Validator adapter | `fhir_repair.validators.hapi` | Wraps HAPI `$validate`, normalizes errors | Yes (Firely, Inferno later) |
@@ -216,19 +216,13 @@ is a configuration change.
 
 ## FHIRPath handling
 
-Paths returned by HAPI's `$validate` are FHIRPath expressions. We use
-`fhirpathpy` to evaluate them, wrapped in `fhir_repair.core.fhirpath` so the
-rest of the codebase imports a single internal surface.
-
-For assignment back to the resource (which FHIRPath does not natively
-support), we parse simple dotted-and-indexed paths (`Patient.contact[0].
-telecom[0].value`) directly. General FHIRPath assignment is undefined, so we
-limit ourselves to the syntactic subset HAPI actually emits as error
-locations.
-
-If `fhirpathpy` proves insufficient for a particular invariant evaluation,
-the fallback is to round-trip through HAPI's FHIRPath via the validator's
-`$evaluate` operation (a future extension; not implemented in v0.1).
+Paths returned by HAPI's `$validate` are FHIRPath expressions, but only a
+small subset of FHIRPath: member access, integer indices, and the choice
+forms `value.ofType(Quantity)` and `value[x]`. `fhir_repair.core.fhirpath`
+parses that subset directly and walks the resource as a dict, which is what
+reading, writing and removing a value at an error location needs. General
+FHIRPath assignment is undefined, and invariants are checked by HAPI, not
+evaluated here.
 
 ## Reproducibility
 
