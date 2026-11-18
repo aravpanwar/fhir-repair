@@ -19,7 +19,7 @@ import json
 import logging
 import random
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -76,6 +76,7 @@ class LLMStrategy:
         max_retries: int = 3,
         backoff_base_s: float = 1.0,
         backoff_max_s: float = 30.0,
+        request_options: dict[str, Any] | None = None,
         scalar_only: bool = False,
     ) -> None:
         self.name = name
@@ -91,6 +92,7 @@ class LLMStrategy:
         self._max_retries = max_retries
         self._backoff_base_s = backoff_base_s
         self._backoff_max_s = backoff_max_s
+        self._request_options = dict(request_options or {})
         # Set on strategies whose answer is a single value. Guards against
         # writing that value over a whole element when the validator reports
         # the error one level up.
@@ -141,6 +143,7 @@ class LLMStrategy:
                 max_retries=self._max_retries,
                 backoff_base_s=self._backoff_base_s,
                 backoff_max_s=self._backoff_max_s,
+                options=self._request_options,
             )
         except Exception as exc:
             return self._refuse(error, before, f"LLM call failed: {exc}")
@@ -214,6 +217,7 @@ def call_with_retry(
     max_retries: int,
     backoff_base_s: float,
     backoff_max_s: float,
+    options: Mapping[str, Any] | None = None,
 ) -> Completion:
     """Call the provider, retrying transient failures with backoff.
 
@@ -226,7 +230,7 @@ def call_with_retry(
     while True:
         start = time.perf_counter()
         try:
-            completion = provider.complete(segments)
+            completion = provider.complete(segments, **(options or {}))
         except Exception as exc:
             if attempt >= max_retries or not _is_transient(exc):
                 raise
@@ -317,6 +321,7 @@ def register_default_llm_strategies(
     max_retries: int = 3,
     backoff_base_s: float = 1.0,
     backoff_max_s: float = 30.0,
+    request_options: dict[str, Any] | None = None,
 ) -> None:
     """Register the built-in LLM strategies on `registry`.
 
@@ -352,6 +357,7 @@ def register_default_llm_strategies(
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
+            request_options=request_options,
             scalar_only=True,
         )
     )
@@ -365,6 +371,7 @@ def register_default_llm_strategies(
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
+            request_options=request_options,
         )
     )
     registry.register(
@@ -379,5 +386,6 @@ def register_default_llm_strategies(
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
+            request_options=request_options,
         )
     )

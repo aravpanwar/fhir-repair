@@ -130,6 +130,7 @@ class Repairer:
             max_retries=self._config.llm.max_retries,
             backoff_base_s=self._config.llm.backoff_base_s,
             backoff_max_s=self._config.llm.backoff_max_s,
+            request_options=self._config.llm.options,
         )
 
     def repair(self, resource: dict[str, Any]) -> RepairResult:

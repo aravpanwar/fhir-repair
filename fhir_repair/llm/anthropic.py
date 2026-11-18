@@ -16,7 +16,7 @@ import time
 from typing import Any
 
 from fhir_repair.core.models import PromptSegment
-from fhir_repair.llm.base import Completion
+from fhir_repair.llm.base import Completion, vendor_options
 
 
 class AnthropicProvider:
@@ -108,8 +108,11 @@ class AnthropicProvider:
         # Only send `temperature` when the caller asked for one. Opus 4.7 and
         # later, and Sonnet 5 and later, reject it with a 400. Older models
         # still accept it, so a caller that needs it can pass it explicitly.
-        if "temperature" in kwargs:
+        if kwargs.get("temperature") is not None:
             request["temperature"] = kwargs["temperature"]
+        extra = vendor_options(kwargs)
+        if extra:
+            request["extra_body"] = extra
         if system_blocks:
             request["system"] = system_blocks
 
@@ -139,7 +142,7 @@ class AnthropicProvider:
             output_tokens=usage.output_tokens,
             cached_tokens=cached,
             latency_ms=latency_ms,
-            model=self._model,
+            model=getattr(response, "model", None) or self._model,
             provider="anthropic",
         )
 

@@ -22,7 +22,7 @@ import time
 from typing import Any
 
 from fhir_repair.core.models import PromptSegment
-from fhir_repair.llm.base import Completion
+from fhir_repair.llm.base import Completion, vendor_options
 
 
 class OpenAIProvider:
@@ -93,8 +93,17 @@ class OpenAIProvider:
             "model": self._model,
             "messages": [{"role": seg.role, "content": seg.text} for seg in segments],
             "max_tokens": kwargs.get("max_tokens", 1024),
-            "temperature": kwargs.get("temperature", 0.0),
         }
+        # 0.0 unless the caller sets one; a null asks for none, for models
+        # that reject the parameter or ignore it while thinking.
+        temperature = kwargs.get("temperature", 0.0)
+        if temperature is not None:
+            request["temperature"] = temperature
+        # The SDK rejects keyword arguments it does not know, so vendor
+        # options such as DeepSeek's `reasoning_effort` go in the body.
+        extra = vendor_options(kwargs)
+        if extra:
+            request["extra_body"] = extra
 
         start = time.perf_counter()
         response = self._client.chat.completions.create(**request)
@@ -112,7 +121,9 @@ class OpenAIProvider:
             output_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
             cached_tokens=_cached_tokens(usage) if usage else 0,
             latency_ms=latency_ms,
-            model=self._model,
+            # The id the server reports, which shows when a requested alias
+            # is served by a different model.
+            model=getattr(response, "model", None) or self._model,
             provider=self._provider_name,
         )
 

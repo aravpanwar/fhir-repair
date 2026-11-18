@@ -115,6 +115,7 @@ class InvariantStrategy:
         max_retries: int = 3,
         backoff_base_s: float = 1.0,
         backoff_max_s: float = 30.0,
+        request_options: dict[str, Any] | None = None,
     ) -> None:
         self._provider = provider
         self._prompt_version = prompt_version
@@ -122,6 +123,7 @@ class InvariantStrategy:
         self._max_retries = max_retries
         self._backoff_base_s = backoff_base_s
         self._backoff_max_s = backoff_max_s
+        self._request_options = dict(request_options or {})
 
     def apply(
         self,
@@ -159,6 +161,7 @@ class InvariantStrategy:
                 max_retries=self._max_retries,
                 backoff_base_s=self._backoff_base_s,
                 backoff_max_s=self._backoff_max_s,
+                options=self._request_options,
             )
         except Exception as exc:
             logger.warning("invariant LLM call failed: %s", exc)

@@ -28,7 +28,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from fhir_repair.core.models import PromptSegment
-from fhir_repair.llm.base import Completion
+from fhir_repair.llm.base import Completion, vendor_options
 
 
 class BedrockProvider:
@@ -114,7 +114,7 @@ class BedrockProvider:
         # `temperature`. So the cap leaves room for thinking, and
         # `temperature` is sent only when the caller asks for it.
         inference: dict[str, Any] = {"maxTokens": kwargs.get("max_tokens", 16000)}
-        if "temperature" in kwargs:
+        if kwargs.get("temperature") is not None:
             inference["temperature"] = kwargs["temperature"]
 
         request: dict[str, Any] = {
@@ -122,6 +122,10 @@ class BedrockProvider:
             "messages": messages,
             "inferenceConfig": inference,
         }
+        # Converse carries model-specific settings in their own field.
+        extra = vendor_options(kwargs)
+        if extra:
+            request["additionalModelRequestFields"] = extra
         if system_blocks:
             request["system"] = system_blocks
 

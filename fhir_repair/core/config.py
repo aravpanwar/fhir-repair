@@ -66,6 +66,12 @@ class LLMConfig(BaseModel):
     backoff_base_s: float = 1.0
     backoff_max_s: float = 30.0
 
+    # Passed to the provider on every call. `max_tokens` and `temperature`
+    # override the adapter's defaults (a null `temperature` sends none);
+    # anything else goes into the request body as given, for vendor
+    # settings such as DeepSeek's `reasoning_effort`.
+    options: dict[str, Any] = Field(default_factory=dict)
+
 
 class HallucinationGuardConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")

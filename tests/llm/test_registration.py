@@ -17,6 +17,7 @@ import types
 import pytest
 
 from fhir_repair.core.config import LLMConfig, RepairConfig
+from fhir_repair.core.models import ValidationError
 from fhir_repair.llm import build_llm_provider
 from fhir_repair.llm.base import Completion
 from fhir_repair.strategies.llm import register_default_llm_strategies
@@ -348,3 +349,35 @@ def test_repairer_raises_when_llm_referenced_without_credentials(monkeypatch):
 
     with pytest.raises(ValueError, match="API key"):
         Repairer(validator=_FakeValidator(), config=config)
+
+
+def test_llm_options_from_config_reach_every_provider_call(tmp_path):
+    from fhir_repair.core.repairer import Repairer
+
+    calls: list[dict] = []
+
+    class _RecordingProvider(_StubProvider):
+        def complete(self, segments, **kwargs):
+            calls.append(kwargs)
+            return Completion(text='{"value": "male"}', input_tokens=1, output_tokens=1)
+
+    class _Validator:
+        def validate(self, resource, profile=None):
+            return (
+                []
+                if resource.get("gender") == "male"
+                else [ValidationError("code-invalid", "error", "Patient.gender", "bad code")]
+            )
+
+        def close(self):
+            pass
+
+    config = RepairConfig(
+        strategies={"code-invalid": "llm"},
+        llm={"options": {"max_tokens": 4000, "reasoning_effort": "none"}},
+        logging={"audit_destination": str(tmp_path)},
+    )
+    repairer = Repairer(validator=_Validator(), config=config, llm_provider=_RecordingProvider())
+    repairer.repair({"resourceType": "Patient", "gender": "M"})
+
+    assert calls == [{"max_tokens": 4000, "reasoning_effort": "none"}]
