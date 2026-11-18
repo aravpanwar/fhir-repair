@@ -1,0 +1,10 @@
+# Arm 1: deterministic strategies only. No LLM, no key needed.
+# HAPI 7.4.0 reports every error in the benchmark corpus as `processing`.
+strategies:
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+    - deterministic.normalize_telecom
+    - deterministic.normalize_codeable_concept
+    - deterministic.canonicalize_identifier_system

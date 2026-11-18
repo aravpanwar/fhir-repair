@@ -1,0 +1,21 @@
+# The dispatch table behind the published 0.2.0 LLM runs (RESULTS.md):
+# deterministic strategies, then the terminology and invariant strategies.
+# Kept to rerun those runs and see how much they move with the model alone.
+strategies:
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+    - deterministic.normalize_telecom
+    - deterministic.normalize_codeable_concept
+    - deterministic.canonicalize_identifier_system
+    - llm.suggest_terminology_match
+    - llm.resolve_invariant
+
+llm:
+  provider: ${LLM_PROVIDER}
+  model: ${LLM_MODEL}
+  api_key: ${LLM_API_KEY}
+
+hallucination_guard:
+  allow_change_existing_clinical_value: true
