@@ -108,11 +108,8 @@ class LLMStrategy:
             # rather than Quantity.code, say). A strategy that answers with
             # a code would overwrite the whole structure with a bare string,
             # which is worse than the error it was fixing.
-            return refused(
+            return self._refuse(
                 error,
-                self.name,
-                self.version,
-                self.permission,
                 before,
                 (
                     f"error location {error.location!r} holds a "
@@ -145,38 +142,19 @@ class LLMStrategy:
                 backoff_max_s=self._backoff_max_s,
             )
         except Exception as exc:
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                f"LLM call failed: {exc}",
-            )
+            return self._refuse(error, before, f"LLM call failed: {exc}")
 
         try:
             new_value = self._parser(completion.text)
         except Exception as exc:
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                f"could not parse LLM response: {exc}",
-            )
+            return self._refuse(error, before, f"could not parse LLM response: {exc}")
 
         if new_value is None:
             # The system prompt asks the model to answer {"value": null} when
             # it cannot determine the fix with confidence. Honour that as a
             # refusal instead of writing a literal null over the resource.
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                "LLM returned null, signalling it could not determine the value",
+            return self._refuse(
+                error, before, "LLM returned null, signalling it could not determine the value"
             )
 
         try:
@@ -186,13 +164,8 @@ class LLMStrategy:
             # than a field (invariants, whole-resource constraints), so
             # there is no path to assign to. That is a refusal, not a
             # crash: raising here would abort a whole benchmark run.
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                f"cannot write to error location {error.location!r}: {exc}",
+            return self._refuse(
+                error, before, f"cannot write to error location {error.location!r}: {exc}"
             )
 
         action = RepairAction(
@@ -207,6 +180,9 @@ class LLMStrategy:
             llm=llm_provenance(completion, self._prompt_version, rendered),
         )
         return action
+
+    def _refuse(self, error: ValidationError, before: Any, reason: str) -> RepairAction:
+        return refused(error, self.name, self.version, self.permission, before, reason)
 
 
 def call_with_retry(
