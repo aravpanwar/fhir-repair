@@ -1,6 +1,7 @@
 # The dispatch table behind the published 0.2.0 LLM runs (RESULTS.md):
 # deterministic strategies, then the terminology and invariant strategies.
 # Kept to rerun those runs and see how much they move with the model alone.
+# No options: those runs used the adapter's default 1024-token cap.
 strategies:
   processing:
     - deterministic.normalize_date

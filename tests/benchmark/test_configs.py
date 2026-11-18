@@ -36,3 +36,10 @@ def test_llm_arms_share_the_guard():
         for name in ("hybrid", "llm-only", "published-0.2.0")
     }
     assert len({guard.model_dump_json() for guard in guards.values()}) == 1
+
+
+def test_hybrid_and_llm_only_send_the_same_llm_options():
+    hybrid = load_config(CONFIGS / "hybrid.yaml").llm
+    llm_only = load_config(CONFIGS / "llm-only.yaml").llm
+    assert hybrid.options == llm_only.options
+    assert hybrid.options["max_tokens"] > 1024
