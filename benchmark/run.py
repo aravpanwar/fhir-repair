@@ -47,6 +47,7 @@ def run_benchmark(
     hapi_url: str | None = None,
     sample: int | None = None,
     sample_seed: int = SAMPLE_SEED,
+    label: str | None = None,
 ) -> dict[str, Any]:
     """Run the tool against every entry in the manifest and compute metrics.
 
@@ -109,6 +110,7 @@ def run_benchmark(
             **repairer._metadata(),
             # Enough to tell arms apart and rerun one: the dispatch table
             # decides which arm this is, and the options shape every call.
+            "label": label,
             "strategies": config.strategies,
             "llm_options": config.llm.options,
             "sample": sample,
@@ -352,7 +354,7 @@ def main() -> None:
     parser.add_argument(
         "--label",
         default=None,
-        help="Name for this run in the leaderboard. Defaults to the model id.",
+        help="Name for this run; repeats of one arm share a label. Defaults to the model id.",
     )
     args = parser.parse_args()
 
@@ -365,6 +367,7 @@ def main() -> None:
         hapi_url=args.hapi_url,
         sample=args.sample,
         sample_seed=args.sample_seed,
+        label=args.label,
     )
     print(json.dumps(payload["summary"], indent=2))
 
