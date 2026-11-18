@@ -26,7 +26,7 @@ from typing import Any
 from jinja2 import Template
 
 from fhir_repair.core.audit import hash_prompt
-from fhir_repair.core.fhirpath import delete_at_path, get_at_path, set_at_path
+from fhir_repair.core.fhirpath import get_at_path, set_at_path
 from fhir_repair.core.models import (
     PromptSegment,
     RepairAction,
@@ -38,26 +38,10 @@ from fhir_repair.strategies.base import refused
 logger = logging.getLogger(__name__)
 
 
-class _Delete:
-    """Sentinel meaning "remove the element at the error path".
-
-    A distinct object rather than None because None already means "the model
-    declined to answer" and is handled as a refusal. Some fixes really are a
-    removal: an invariant forbidding two fields from coexisting is satisfied
-    by dropping one, and writing null in its place leaves the resource
-    invalid.
-    """
-
-    def __repr__(self) -> str:  # pragma: no cover - debugging aid
-        return "DELETE"
-
-
-DELETE = _Delete()
-
 # Type for a parser that takes the LLM's raw text and returns the new value
 # at the error location. May raise to signal "could not parse" or
-# "untrustworthy output"; the runner converts that into a refusal. May also
-# return the DELETE sentinel to request removal instead of replacement.
+# "untrustworthy output"; the runner converts that into a refusal. Removals
+# are the invariant strategy's job, which checks the element it removes.
 ResponseParser = Callable[[str], Any]
 
 
@@ -195,38 +179,21 @@ class LLMStrategy:
                 "LLM returned null, signalling it could not determine the value",
             )
 
-        if new_value is DELETE:
-            if not delete_at_path(resource, error.location):
-                return refused(
-                    error,
-                    self.name,
-                    self.version,
-                    self.permission,
-                    before,
-                    "LLM asked to remove an element that is not present",
-                )
-            after: Any = None
-            removed = True
-            explanation = f"LLM ({completion.model}) removed the element at the error path."
-        else:
-            try:
-                set_at_path(resource, error.location, new_value)
-            except ValueError as exc:
-                # Some errors are reported against the resource itself rather
-                # than a field (invariants, whole-resource constraints), so
-                # there is no path to assign to. That is a refusal, not a
-                # crash: raising here would abort a whole benchmark run.
-                return refused(
-                    error,
-                    self.name,
-                    self.version,
-                    self.permission,
-                    before,
-                    f"cannot write to error location {error.location!r}: {exc}",
-                )
-            after = new_value
-            removed = False
-            explanation = f"LLM ({completion.model}) produced replacement value."
+        try:
+            set_at_path(resource, error.location, new_value)
+        except ValueError as exc:
+            # Some errors are reported against the resource itself rather
+            # than a field (invariants, whole-resource constraints), so
+            # there is no path to assign to. That is a refusal, not a
+            # crash: raising here would abort a whole benchmark run.
+            return refused(
+                error,
+                self.name,
+                self.version,
+                self.permission,
+                before,
+                f"cannot write to error location {error.location!r}: {exc}",
+            )
 
         action = RepairAction(
             error=error,
@@ -235,9 +202,8 @@ class LLMStrategy:
             risk=self.risk,  # type: ignore[arg-type]
             permission_used=self.permission,
             before=before,
-            after=after,
-            removed=removed,
-            explanation=explanation,
+            after=new_value,
+            explanation=f"LLM ({completion.model}) produced replacement value.",
             llm=llm_provenance(completion, self._prompt_version, rendered),
         )
         return action

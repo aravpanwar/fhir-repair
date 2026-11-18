@@ -10,9 +10,8 @@ guard grants it.
 """
 
 from fhir_repair.strategies.llm.runner import (
-    DELETE,
     LLMStrategy,
     register_default_llm_strategies,
 )
 
-__all__ = ["DELETE", "LLMStrategy", "register_default_llm_strategies"]
+__all__ = ["LLMStrategy", "register_default_llm_strategies"]

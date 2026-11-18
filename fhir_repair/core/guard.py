@@ -80,7 +80,7 @@ class HallucinationGuard:
 
     @classmethod
     def strict(cls) -> HallucinationGuard:
-        """Deny every permission. Used by the `strict_mode` shortcut."""
+        """Deny every permission."""
         return cls(
             allow_reformat=False,
             allow_bind_required_valueset=False,
