@@ -70,7 +70,6 @@ Output:
 | Deterministic strategies | `fhir_repair.strategies.deterministic.*` | Pure functions, one per fix pattern | Yes (community PRs) |
 | LLM strategies | `fhir_repair.strategies.llm.*` | Runner, RAG, prompt templates | Yes |
 | LLM provider | `fhir_repair.llm.*` | Provider adapters (Anthropic, OpenAI, etc.) | Yes (BYO via env) |
-| Terminology service | `fhir_repair.terminology.*` | Bound-set lookups | Yes (BYO endpoint) |
 | Surfaces | `fhir_repair.cli.main` | CLI entry point | Library + CLI in v0.1, FastAPI later |
 
 ## Multi-error interaction protocol

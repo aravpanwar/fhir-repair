@@ -3,7 +3,7 @@
 A strategy takes a resource and a single ValidationError, returns a
 `RepairAction` (applied or refused), and declares which hallucination_guard
 permission it requires. Pure deterministic strategies have no IO; LLM
-strategies inject an LLMProvider and possibly a TerminologyService.
+strategies inject an LLMProvider.
 
 The Protocol is `runtime_checkable` so the registry can validate
 implementations at registration time.
