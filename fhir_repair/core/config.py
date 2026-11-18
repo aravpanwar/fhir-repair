@@ -8,6 +8,7 @@ strings, which the LLM provider adapter is responsible for rejecting.
 
 from __future__ import annotations
 
+import copy
 import os
 import re
 from pathlib import Path
@@ -19,6 +20,26 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from fhir_repair.core.guard import HallucinationGuard
 
 ENV_VAR_RE = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)\}")
+
+# The dispatch table used when a config does not set `strategies`. HAPI
+# reports most malformed values with the coarse issue code `processing`, so
+# every deterministic strategy is tried in turn and each refuses when the
+# value is not its kind. LLM strategies are opt-in and never in the default.
+DEFAULT_STRATEGIES: dict[str, str | list[str]] = {
+    "processing": [
+        "deterministic.normalize_date",
+        "deterministic.normalize_decimal",
+        "deterministic.unwrap_singleton",
+        "deterministic.normalize_telecom",
+        "deterministic.normalize_codeable_concept",
+        "deterministic.canonicalize_identifier_system",
+    ],
+}
+
+
+def _default_strategies() -> dict[str, str | list[str]]:
+    """A fresh copy, so one config editing its table cannot change another's."""
+    return copy.deepcopy(DEFAULT_STRATEGIES)
 
 
 class LLMConfig(BaseModel):
@@ -98,7 +119,7 @@ class RepairConfig(BaseModel):
     # FHIR issue code (e.g. HAPI's coarse `processing`) route to several
     # specific strategies, each of which refuses cleanly when its
     # preconditions do not match.
-    strategies: dict[str, str | list[str]] = Field(default_factory=dict)
+    strategies: dict[str, str | list[str]] = Field(default_factory=_default_strategies)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     hallucination_guard: HallucinationGuardConfig = Field(default_factory=HallucinationGuardConfig)
     limits: LimitsConfig = Field(default_factory=LimitsConfig)
