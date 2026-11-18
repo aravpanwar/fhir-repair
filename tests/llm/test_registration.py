@@ -128,6 +128,18 @@ def test_build_llm_provider_deepseek(monkeypatch):
     assert provider.supports_caching() is False
 
 
+def test_deepseek_defaults_to_the_current_flash_id(monkeypatch):
+    # deepseek-v4-flash was retired on 2026-09-10 and is only routed to its
+    # successor temporarily.
+    fake_module = types.ModuleType("openai")
+    fake_module.OpenAI = lambda **kwargs: None  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    provider = build_llm_provider(LLMConfig(provider="deepseek", api_key="sk-ds"))
+
+    assert provider._model == "deepseek-flash"  # type: ignore[attr-defined]
+
+
 def test_deepseek_run_is_not_recorded_as_openai(monkeypatch):
     """Audit and leaderboard provenance must name the vendor that answered."""
     from fhir_repair.core.models import PromptSegment

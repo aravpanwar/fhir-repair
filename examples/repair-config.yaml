@@ -74,7 +74,7 @@ strategies:
 #   anthropic, openai  api_key required
 #   deepseek           api_key required. Endpoint defaults to
 #                      https://api.deepseek.com/v1; models are
-#                      deepseek-v4-flash and deepseek-v4-pro.
+#                      deepseek-flash and deepseek-v4-pro.
 #   bedrock            no api_key; uses the AWS credential chain, and needs
 #                      AWS_REGION set. Model ids are Bedrock-specific, e.g.
 #                      anthropic.claude-sonnet-4-5-20250929-v1:0
