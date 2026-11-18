@@ -20,6 +20,7 @@ import logging
 import random
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -144,17 +145,24 @@ class LLMStrategy:
         except Exception as exc:
             return self._refuse(error, before, f"LLM call failed: {exc}")
 
+        provenance = llm_provenance(completion, self._prompt_version, rendered)
+
         try:
             new_value = self._parser(completion.text)
         except Exception as exc:
-            return self._refuse(error, before, f"could not parse LLM response: {exc}")
+            return self._refuse(
+                error, before, f"could not parse LLM response: {exc}", llm=provenance
+            )
 
         if new_value is None:
             # The system prompt asks the model to answer {"value": null} when
             # it cannot determine the fix with confidence. Honour that as a
             # refusal instead of writing a literal null over the resource.
             return self._refuse(
-                error, before, "LLM returned null, signalling it could not determine the value"
+                error,
+                before,
+                "LLM returned null, signalling it could not determine the value",
+                llm=provenance,
             )
 
         try:
@@ -165,7 +173,10 @@ class LLMStrategy:
             # there is no path to assign to. That is a refusal, not a
             # crash: raising here would abort a whole benchmark run.
             return self._refuse(
-                error, before, f"cannot write to error location {error.location!r}: {exc}"
+                error,
+                before,
+                f"cannot write to error location {error.location!r}: {exc}",
+                llm=provenance,
             )
 
         action = RepairAction(
@@ -177,12 +188,23 @@ class LLMStrategy:
             before=before,
             after=new_value,
             explanation=f"LLM ({completion.model}) produced replacement value.",
-            llm=llm_provenance(completion, self._prompt_version, rendered),
+            llm=provenance,
         )
         return action
 
-    def _refuse(self, error: ValidationError, before: Any, reason: str) -> RepairAction:
-        return refused(error, self.name, self.version, self.permission, before, reason)
+    def _refuse(
+        self,
+        error: ValidationError,
+        before: Any,
+        reason: str,
+        llm: dict[str, Any] | None = None,
+    ) -> RepairAction:
+        # `llm` is set when the refusal came after a successful call: the
+        # tokens were spent either way, and leaving them out of the audit
+        # entry would understate what a run cost.
+        return replace(
+            refused(error, self.name, self.version, self.permission, before, reason), llm=llm
+        )
 
 
 def call_with_retry(

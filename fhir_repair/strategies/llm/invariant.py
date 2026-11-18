@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -163,25 +164,33 @@ class InvariantStrategy:
             logger.warning("invariant LLM call failed: %s", exc)
             return self._refuse(error, None, f"LLM call failed: {exc}")
 
+        provenance = llm_provenance(completion, self._prompt_version, rendered)
+
         try:
             target = parse_invariant_response(completion.text)
         except Exception as exc:
-            return self._refuse(error, None, f"could not parse LLM response: {exc}")
+            return self._refuse(error, None, f"could not parse LLM response: {exc}", llm=provenance)
 
         if target is None:
-            return self._refuse(error, None, "LLM declined to name an element to remove")
+            return self._refuse(
+                error, None, "LLM declined to name an element to remove", llm=provenance
+            )
 
         # Never delete on an unchecked name. The model could return a field
         # that is absent, or one that is structural rather than clinical.
         if target not in resource:
-            return self._refuse(error, None, f"element {target!r} is not present on the resource")
+            return self._refuse(
+                error, None, f"element {target!r} is not present on the resource", llm=provenance
+            )
         if target in _PROTECTED_ELEMENTS:
-            return self._refuse(error, None, f"refusing to remove structural element {target!r}")
+            return self._refuse(
+                error, None, f"refusing to remove structural element {target!r}", llm=provenance
+            )
 
         location = f"{resource.get('resourceType', '')}.{target}".lstrip(".")
         before = get_at_path(resource, location)
         if not delete_at_path(resource, location):
-            return self._refuse(error, before, f"could not remove {location}")
+            return self._refuse(error, before, f"could not remove {location}", llm=provenance)
 
         return RepairAction(
             error=error,
@@ -196,11 +205,22 @@ class InvariantStrategy:
             explanation=(
                 f"LLM ({completion.model}) resolved the invariant by removing {location}."
             ),
-            llm=llm_provenance(completion, self._prompt_version, rendered),
+            llm=provenance,
         )
 
-    def _refuse(self, error: ValidationError, before: Any, reason: str) -> RepairAction:
-        return refused(error, self.name, self.version, self.permission, before, reason)
+    def _refuse(
+        self,
+        error: ValidationError,
+        before: Any,
+        reason: str,
+        llm: dict[str, Any] | None = None,
+    ) -> RepairAction:
+        # `llm` is set when the refusal came after a successful call: the
+        # tokens were spent either way, and leaving them out of the audit
+        # entry would understate what a run cost.
+        return replace(
+            refused(error, self.name, self.version, self.permission, before, reason), llm=llm
+        )
 
 
 # Elements that carry the resource's identity rather than clinical content.
