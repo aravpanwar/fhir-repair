@@ -1,7 +1,6 @@
 """Generic LLM strategy runner.
 
-Wraps a prompt template, an LLMProvider, and (optionally) a RAG retriever
-into a `Strategy`. The runner handles:
+Wraps a prompt template and an LLMProvider into a `Strategy`. The runner handles:
 
   - Loading and rendering the prompt template
   - Calling the provider with a structured PromptSegment list, marking
@@ -35,7 +34,6 @@ from fhir_repair.core.models import (
 )
 from fhir_repair.llm.base import Completion, LLMProvider
 from fhir_repair.strategies.base import refused
-from fhir_repair.strategies.llm.rag import SpecRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +86,6 @@ class LLMStrategy:
         prompt_path: Path,
         prompt_version: str,
         provider: LLMProvider,
-        retriever: SpecRetriever | None = None,
         parser: ResponseParser = _default_parser,
         system_prompt: str | None = None,
         max_retries: int = 3,
@@ -104,7 +101,6 @@ class LLMStrategy:
         self._template = Template(prompt_path.read_text(encoding="utf-8"))
         self._prompt_version = prompt_version
         self._provider = provider
-        self._retriever = retriever
         self._parser = parser
         self._system_prompt = system_prompt or _DEFAULT_SYSTEM_PROMPT
         self._max_retries = max_retries
@@ -140,27 +136,21 @@ class LLMStrategy:
                 ),
             )
 
-        spec_excerpt = ""
-        if self._retriever is not None:
-            spec_excerpt = self._retriever.retrieve(error)
-
+        # The v1 templates keep a conditional spec-excerpt block from a
+        # retrieval step that was never built. With no excerpt it renders
+        # nothing, and editing the files would make them a new prompt version.
         rendered = self._template.render(
             resource=json.dumps(resource, separators=(",", ":")),
             error=error,
-            spec_excerpt=spec_excerpt,
             current_value=before,
         )
 
-        # Stable segments (cacheable across calls) come first; volatile
-        # segments (per-resource content) come last. Anthropic caches the
-        # prefix up to and including the last stable segment; OpenAI auto-
-        # caches whatever prefix happens to repeat.
+        # The stable system prompt comes first so providers that cache a
+        # repeated prefix can reuse it; the per-resource part comes last.
         segments = [
             PromptSegment(role="system", text=self._system_prompt, stable=True),
+            PromptSegment(role="user", text=rendered, stable=False),
         ]
-        if spec_excerpt:
-            segments.append(PromptSegment(role="system", text=spec_excerpt, stable=True))
-        segments.append(PromptSegment(role="user", text=rendered, stable=False))
 
         try:
             completion = call_with_retry(
@@ -360,7 +350,6 @@ def register_default_llm_strategies(
     registry: Any,
     provider: LLMProvider,
     prompt_version: str = "v1",
-    retriever: SpecRetriever | None = None,
     max_retries: int = 3,
     backoff_base_s: float = 1.0,
     backoff_max_s: float = 30.0,
@@ -396,7 +385,6 @@ def register_default_llm_strategies(
             prompt_path=_PROMPTS_DIR / "repair_terminology.v1.jinja",
             prompt_version=prompt_version,
             provider=provider,
-            retriever=retriever,
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
@@ -424,7 +412,6 @@ def register_default_llm_strategies(
             prompt_path=_PROMPTS_DIR / "repair_unknown.v1.jinja",
             prompt_version=prompt_version,
             provider=provider,
-            retriever=retriever,
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,

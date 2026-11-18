@@ -41,7 +41,6 @@ fns, depth-batched)
 5. Send to LLM with:
    - resource
    - remaining errors only
-   - retrieved spec excerpt
    - hallucination guard permissions
    - PromptSegment[stable] hints
     |
@@ -68,7 +67,7 @@ Output:
 | Validator adapter | `fhir_repair.validators.hapi` | Wraps HAPI `$validate`, normalizes errors | Yes (Firely, Inferno later) |
 | Strategy base | `fhir_repair.strategies.base` | Strategy Protocol; declares required permission | No |
 | Deterministic strategies | `fhir_repair.strategies.deterministic.*` | Pure functions, one per fix pattern | Yes (community PRs) |
-| LLM strategies | `fhir_repair.strategies.llm.*` | Runner, RAG, prompt templates | Yes |
+| LLM strategies | `fhir_repair.strategies.llm.*` | Runner, prompt templates | Yes |
 | LLM provider | `fhir_repair.llm.*` | Provider adapters (Anthropic, OpenAI, etc.) | Yes (BYO via env) |
 | Surfaces | `fhir_repair.cli.main` | CLI entry point | Library + CLI in v0.1, FastAPI later |
 
@@ -203,7 +202,7 @@ class PromptSegment:
 ```
 
 The runner sets `stable=True` on segments that repeat across calls (the
-system prompt, the retrieved FHIR spec excerpt) and `stable=False` on
+system prompt) and `stable=False` on
 segments that vary per request (the broken resource, the error list). Each
 provider adapter maps the hint to its native primitive:
 

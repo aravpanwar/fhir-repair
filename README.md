@@ -30,7 +30,7 @@ takes in a machine-readable audit log.
    deterministic fix, LLM fix, refuse, or escalate to human review.
 4. **Apply** deterministic strategies in depth-ordered batches (pure
    functions, no IO), re-validate, then queue any remaining errors for the
-   LLM with a retrieved spec excerpt and a hallucination guard.
+   LLM behind a hallucination guard.
 5. **Re-validate** after each round. Roll back any fix that introduces a new
    error. Halt when valid, when budget is exhausted, or when the error set
    stops changing.
