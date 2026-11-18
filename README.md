@@ -114,8 +114,8 @@ See [examples/quickstart.md](examples/quickstart.md) for a complete walkthrough.
 
 ## Configuration
 
-Strategy choices, LLM endpoint, hallucination guard permissions, and
-terminology service are all set in a single YAML file:
+Strategy choices, the LLM endpoint and hallucination guard permissions are
+all set in a single YAML file:
 
 ```yaml
 target_profile: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient

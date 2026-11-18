@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -31,7 +31,6 @@ class LLMConfig(BaseModel):
     # code (build_llm_provider) handles missing values explicitly.
     provider: str | None = None
     model: str | None = None
-    temperature: float = 0.0
     prompt_version: str = "v1"
     endpoint: str | None = None
     api_key: str | None = None
@@ -45,14 +44,6 @@ class LLMConfig(BaseModel):
     max_retries: int = 3
     backoff_base_s: float = 1.0
     backoff_max_s: float = 30.0
-
-
-class TerminologyConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    service: Literal["none", "tx-fhir-org", "hapi-local", "custom"] = "none"
-    endpoint: str | None = None
-    cache_dir: str | None = None
 
 
 class HallucinationGuardConfig(BaseModel):
@@ -89,7 +80,6 @@ class LoggingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     audit_destination: str = "./audit-logs/"
-    log_level: Literal["debug", "info", "warning", "error"] = "info"
 
 
 class RepairConfig(BaseModel):
@@ -110,7 +100,6 @@ class RepairConfig(BaseModel):
     # preconditions do not match.
     strategies: dict[str, str | list[str]] = Field(default_factory=dict)
     llm: LLMConfig = Field(default_factory=LLMConfig)
-    terminology: TerminologyConfig = Field(default_factory=TerminologyConfig)
     hallucination_guard: HallucinationGuardConfig = Field(default_factory=HallucinationGuardConfig)
     limits: LimitsConfig = Field(default_factory=LimitsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)

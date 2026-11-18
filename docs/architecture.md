@@ -177,10 +177,9 @@ every LLM fix and rolls back anything that introduces a validator error, and
 every LLM action is written to the audit log with its before/after values
 and full provenance, so no change is silent. What is missing is output-side
 enforcement of the permission scope. Closing it requires a terminology
-service to check ValueSet membership (the `terminology` config exists for
-this and currently defaults to `none`); until then, treat LLM-strategy
-output as recorded-but-unverified and keep the guard permissions
-conservative for runs on data you cannot review.
+service to check ValueSet membership, which is not implemented; until then,
+treat LLM-strategy output as recorded-but-unverified and keep the guard
+permissions conservative for runs on data you cannot review.
 
 ## Caching as a provider capability
 
@@ -243,8 +242,8 @@ and published results cannot be checked.
 The library has no shared state, no database, no session. Every `repair()`
 call is self-contained.
 
-The library makes no outbound network calls except to the validator, the
-LLM, and the terminology server you configure. There is no analytics, no
+The library makes no outbound network calls except to the validator and
+the LLM you configure. There is no analytics, no
 phone-home, no version check. This is what makes the legal posture work:
 "deployable in HIPAA-compliant environments per deployer's configuration"
 is only true if there are no surprise endpoints.

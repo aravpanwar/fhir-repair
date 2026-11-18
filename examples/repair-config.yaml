@@ -83,17 +83,9 @@ strategies:
 llm:
   provider: ${LLM_PROVIDER}        # anthropic | openai | deepseek | bedrock | on-prem
   model: ${LLM_MODEL}              # provider-specific model identifier
-  temperature: 0.0
   prompt_version: v1
   endpoint: ${LLM_ENDPOINT}        # required for on-prem; optional elsewhere
   api_key: ${LLM_API_KEY}
-
-# Terminology service. `none` disables remote lookups; the local index
-# still answers queries against FHIR-internal CodeSystems.
-terminology:
-  service: none                    # none | tx-fhir-org | hapi-local | custom
-  endpoint: ${TX_ENDPOINT}
-  cache_dir: ./tx-cache
 
 # Hallucination guard permissions. Each defaults conservatively. Turn one
 # on only after deciding the risk is acceptable for your deployment.
@@ -116,4 +108,3 @@ limits:
 # When repairing PHI, this directory contains PHI; secure it accordingly.
 logging:
   audit_destination: ./audit-logs/
-  log_level: info

@@ -23,7 +23,6 @@ The library makes no outbound network calls except to:
 
 1. The validator endpoint you configure (typically a HAPI server you run).
 2. The LLM endpoint you configure, if you have enabled an LLM strategy.
-3. The terminology service you configure, if you have enabled one.
 
 There is no analytics, no error reporting to a third party, no version
 check against an upstream server. You can verify this by running the
@@ -32,8 +31,7 @@ mocked locally.
 
 ### BYO endpoints
 
-The LLM endpoint and terminology server endpoint are configured by you,
-through environment variables. The library ships with no default endpoint
+The LLM endpoint is configured by you, through environment variables. The library ships with no default endpoint
 that would route data outside your control. If you do not configure an
 LLM endpoint, no LLM is invoked; the library degrades to deterministic
 strategies only.
@@ -72,13 +70,6 @@ export LLM_API_KEY=...
 
 Never put credentials in `repair-config.yaml`.
 
-### Terminology server
-
-The default `tx.fhir.org` adapter sends codes to a public test server.
-**Do not use this with PHI**. For deployments touching PHI, run a local
-terminology server (HAPI with terminology loaded, Snowstorm for SNOMED,
-or a commercial terminology service) and point the adapter at it.
-
 ### Audit log destination
 
 Audit logs are written as files. For PHI deployments:
@@ -97,7 +88,6 @@ network layer:
 
 - Allow outbound to your validator (typically `localhost`).
 - Allow outbound to your LLM endpoint.
-- Allow outbound to your terminology server.
 - Block everything else.
 
 ## Things this library deliberately does not do
