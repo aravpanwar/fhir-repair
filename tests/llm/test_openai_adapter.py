@@ -181,3 +181,15 @@ def test_completion_records_the_model_the_server_reports(fake_openai, monkeypatc
     completion = provider.complete([PromptSegment(role="user", text="hi", stable=False)])
 
     assert completion.model == "served-model-1017"
+
+
+def test_deepseek_cache_hits_are_counted():
+    # DeepSeek reports cache hits in its own field; missing them overstates
+    # what a run cost.
+    from fhir_repair.llm.openai import _cached_tokens
+
+    class _DeepSeekUsage:
+        prompt_tokens_details = None
+        prompt_cache_hit_tokens = 640
+
+    assert _cached_tokens(_DeepSeekUsage()) == 640

@@ -182,12 +182,13 @@ def _cached_tokens(usage: Any) -> int:
     """Read cached prompt tokens from a usage object, defensively.
 
     Newer OpenAI responses expose `usage.prompt_tokens_details.cached_tokens`.
-    Older ones omit it. The details payload may be an object or a dict
-    depending on SDK version, so handle both and fall back to 0.
+    Older ones omit it. DeepSeek reports `prompt_cache_hit_tokens` instead.
+    The details payload may be an object or a dict depending on SDK version,
+    so handle both and fall back to 0.
     """
     details = getattr(usage, "prompt_tokens_details", None)
     if details is None:
-        return 0
+        return int(getattr(usage, "prompt_cache_hit_tokens", 0) or 0)
     if isinstance(details, dict):
         return int(details.get("cached_tokens", 0) or 0)
     return int(getattr(details, "cached_tokens", 0) or 0)
