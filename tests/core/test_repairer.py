@@ -410,3 +410,20 @@ def test_mapped_but_unfixed_errors_are_reported_unresolved(tmp_path):
     codes = {e.code for e in result.unresolved}
     assert "mapped-code" in codes
     assert "other-code" in codes
+
+
+def test_repairer_without_config_fixes_processing_errors(tmp_path, monkeypatch):
+    # HAPI's code for a malformed date. The default table must route it.
+    monkeypatch.chdir(tmp_path)
+
+    def rule(resource: dict[str, Any]) -> list[ValidationError]:
+        if resource["birthDate"] == "1937-4-27":
+            return [_error("processing", "Patient.birthDate")]
+        return []
+
+    result = Repairer(validator=_RuleValidator(rule)).repair(
+        {"resourceType": "Patient", "birthDate": "1937-4-27"}
+    )
+
+    assert result.fixed_resource["birthDate"] == "1937-04-27"
+    assert result.unresolved == []

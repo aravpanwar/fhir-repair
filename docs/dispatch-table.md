@@ -32,27 +32,45 @@ identifier or one of the special tokens below.
 | `llm.<name>` | A registered LLM strategy with a specific prompt template | `llm.suggest_terminology_match` |
 | `llm` | Generic LLM dispatch using the default prompt | `llm` |
 | `refuse` | Mark the error unresolved without attempting a fix | `refuse` |
-| `human` | Reserved for future use; queues for human review (not implemented in v0.1) | `human` |
+
+A strategy id that is not registered is rejected when the `Repairer` is
+built, so a typo fails at once rather than partway through a repair.
+
+## Default
+
+A config without a `strategies` section uses this table:
+
+```yaml
+strategies:
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+    - deterministic.normalize_telecom
+    - deterministic.normalize_codeable_concept
+    - deterministic.canonicalize_identifier_system
+```
+
+HAPI 7.4.0 emits the bare FHIR issue code `processing` for most value-level
+problems, with the specifics in the diagnostics text, so the default routes
+`processing` through a chain instead of mapping fine-grained codes. It holds
+no LLM strategy. Setting `strategies` replaces the default rather than adding
+to it.
 
 ## Example
 
 ```yaml
 strategies:
-  invalid-date-format: deterministic.normalize_date
-  invalid-decimal-format: deterministic.normalize_decimal
-  unexpected-array: deterministic.unwrap_singleton
-  invalid-code-binding: llm.suggest_terminology_match
-  missing-required-element: refuse
-  unknown-error: llm
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+    - llm.suggest_terminology_match
+  unknown-error: refuse
 ```
 
-Note that the codes above are illustrative. HAPI 7.4.0 emits the bare FHIR
-issue code `processing` for most value-level problems, with the specifics in
-the diagnostics text, which is why the shipped
-[../examples/repair-config.yaml](../examples/repair-config.yaml) routes
-`processing` through a chain instead of mapping fine-grained codes. Check
-what your validator actually returns before adding an entry: a key that never
-matches is silently dead.
+Check what your validator actually returns before adding an entry: a key
+that never matches is silently dead.
 
 ## Removal-only strategies
 
@@ -81,10 +99,10 @@ A removal is recorded in the audit log with `after` set to null.
 
 When dispatching an error, the resolver checks in this order:
 
-1. The exact error code (e.g., `invalid-date-format`).
+1. The exact error code (e.g., `processing`).
 2. `unknown-error` as a catch-all.
-3. If neither matches, the error is recorded as unresolved with a
-   `dispatch-miss` diagnostic.
+3. If neither matches, no strategy runs, and the error is reported in
+   `RepairResult.unresolved` and counted in the audit summary.
 
 This means setting `unknown-error: llm` makes the LLM the default for any
 error code you have not explicitly mapped, while `unknown-error: refuse`

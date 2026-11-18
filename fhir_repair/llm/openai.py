@@ -6,6 +6,10 @@ per-segment markup, so this adapter ignores the `stable` hint on incoming
 segments and reports `supports_caching()` as False: it applies no caching
 primitive of its own.
 
+`OnPremProvider` drives a self-hosted server (vLLM, Ollama, llama.cpp, TGI,
+or a gateway) that speaks the same protocol, and differs only in what it
+requires of the caller.
+
 The `openai` package is an optional dependency; install the `openai` extra
 (see Installation in the README). Set a private or Azure-style endpoint with
 the `endpoint` argument (mapped to the SDK `base_url`).
@@ -98,13 +102,14 @@ class OpenAIProvider:
 
         text = response.choices[0].message.content or ""
 
-        # OpenAI types `usage` as optional; guard rather than assume it is
-        # populated. Missing usage simply reports zero tokens.
-        usage = response.usage
+        # OpenAI types `usage` as optional, and self-hosted servers vary in
+        # how completely they fill it in. Missing counts report zero rather
+        # than failing the repair.
+        usage = getattr(response, "usage", None)
         return Completion(
             text=text,
-            input_tokens=usage.prompt_tokens if usage else 0,
-            output_tokens=usage.completion_tokens if usage else 0,
+            input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+            output_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
             cached_tokens=_cached_tokens(usage) if usage else 0,
             latency_ms=latency_ms,
             model=self._model,
@@ -113,6 +118,53 @@ class OpenAIProvider:
 
     def supports_caching(self) -> bool:
         return False
+
+
+# The OpenAI SDK requires a non-empty api_key. Unauthenticated local servers
+# ignore the header, so a placeholder keeps the SDK happy without implying a
+# credential exists.
+_UNAUTHENTICATED_PLACEHOLDER = "not-used"
+
+
+class OnPremProvider(OpenAIProvider):
+    """OpenAI-protocol client pointed at a self-hosted model server.
+
+    For deployments where no data may leave the network. Two requirements
+    differ from the hosted adapter:
+
+      - `endpoint` is required. Without it the SDK would silently fall back
+        to api.openai.com, which for an on-prem deployment means sending
+        clinical data to a third party. That failure has to be loud.
+      - The API key is optional. Self-hosted servers commonly run without
+        authentication inside a trusted network.
+    """
+
+    def __init__(
+        self,
+        endpoint: str | None = None,
+        model: str = "",
+        api_key: str | None = None,
+    ) -> None:
+        resolved_endpoint = endpoint or os.environ.get("LLM_ENDPOINT")
+        if not resolved_endpoint:
+            raise ValueError(
+                "OnPremProvider requires an endpoint pointing at your model "
+                "server (for example http://localhost:8000/v1). Set "
+                "LLM_ENDPOINT in the environment, or pass endpoint="
+            )
+
+        if not model:
+            raise ValueError(
+                "OnPremProvider requires a model name matching the one your "
+                "server serves. Set LLM_MODEL in the environment, or pass model="
+            )
+
+        super().__init__(
+            api_key=api_key or os.environ.get("LLM_API_KEY") or _UNAUTHENTICATED_PLACEHOLDER,
+            model=model,
+            endpoint=resolved_endpoint,
+            provider_name="on-prem",
+        )
 
 
 def _cached_tokens(usage: Any) -> int:

@@ -41,7 +41,6 @@ fns, depth-batched)
 5. Send to LLM with:
    - resource
    - remaining errors only
-   - retrieved spec excerpt
    - hallucination guard permissions
    - PromptSegment[stable] hints
     |
@@ -62,15 +61,14 @@ Output:
 |---|---|---|---|
 | Core repairer | `fhir_repair.core.repairer` | Orchestrates the loop, manages budget, writes audit log | No |
 | Dispatcher | `fhir_repair.core.dispatcher` | Strategy lookup, leaf-first ordering, regression rollback | No |
-| FHIRPath utility | `fhir_repair.core.fhirpath` | Wraps `fhirpathpy` for evaluation and assignment | No |
+| FHIRPath utility | `fhir_repair.core.fhirpath` | Reads, writes and removes the values at HAPI's error locations | No |
 | Hallucination guard | `fhir_repair.core.guard` | Five independent permissions checked before each strategy runs | No |
 | Audit writer | `fhir_repair.core.audit` | JSON Lines output with sealed v1 schema | Output destination configurable |
 | Validator adapter | `fhir_repair.validators.hapi` | Wraps HAPI `$validate`, normalizes errors | Yes (Firely, Inferno later) |
 | Strategy base | `fhir_repair.strategies.base` | Strategy Protocol; declares required permission | No |
 | Deterministic strategies | `fhir_repair.strategies.deterministic.*` | Pure functions, one per fix pattern | Yes (community PRs) |
-| LLM strategies | `fhir_repair.strategies.llm.*` | Runner, RAG, prompt templates | Yes |
+| LLM strategies | `fhir_repair.strategies.llm.*` | Runner, prompt templates | Yes |
 | LLM provider | `fhir_repair.llm.*` | Provider adapters (Anthropic, OpenAI, etc.) | Yes (BYO via env) |
-| Terminology service | `fhir_repair.terminology.*` | Bound-set lookups | Yes (BYO endpoint) |
 | Surfaces | `fhir_repair.cli.main` | CLI entry point | Library + CLI in v0.1, FastAPI later |
 
 ## Multi-error interaction protocol
@@ -179,10 +177,9 @@ every LLM fix and rolls back anything that introduces a validator error, and
 every LLM action is written to the audit log with its before/after values
 and full provenance, so no change is silent. What is missing is output-side
 enforcement of the permission scope. Closing it requires a terminology
-service to check ValueSet membership (the `terminology` config exists for
-this and currently defaults to `none`); until then, treat LLM-strategy
-output as recorded-but-unverified and keep the guard permissions
-conservative for runs on data you cannot review.
+service to check ValueSet membership, which is not implemented; until then,
+treat LLM-strategy output as recorded-but-unverified and keep the guard
+permissions conservative for runs on data you cannot review.
 
 ## Caching as a provider capability
 
@@ -204,7 +201,7 @@ class PromptSegment:
 ```
 
 The runner sets `stable=True` on segments that repeat across calls (the
-system prompt, the retrieved FHIR spec excerpt) and `stable=False` on
+system prompt) and `stable=False` on
 segments that vary per request (the broken resource, the error list). Each
 provider adapter maps the hint to its native primitive:
 
@@ -218,19 +215,13 @@ is a configuration change.
 
 ## FHIRPath handling
 
-Paths returned by HAPI's `$validate` are FHIRPath expressions. We use
-`fhirpathpy` to evaluate them, wrapped in `fhir_repair.core.fhirpath` so the
-rest of the codebase imports a single internal surface.
-
-For assignment back to the resource (which FHIRPath does not natively
-support), we parse simple dotted-and-indexed paths (`Patient.contact[0].
-telecom[0].value`) directly. General FHIRPath assignment is undefined, so we
-limit ourselves to the syntactic subset HAPI actually emits as error
-locations.
-
-If `fhirpathpy` proves insufficient for a particular invariant evaluation,
-the fallback is to round-trip through HAPI's FHIRPath via the validator's
-`$evaluate` operation (a future extension; not implemented in v0.1).
+Paths returned by HAPI's `$validate` are FHIRPath expressions, but only a
+small subset of FHIRPath: member access, integer indices, and the choice
+forms `value.ofType(Quantity)` and `value[x]`. `fhir_repair.core.fhirpath`
+parses that subset directly and walks the resource as a dict, which is what
+reading, writing and removing a value at an error location needs. General
+FHIRPath assignment is undefined, and invariants are checked by HAPI, not
+evaluated here.
 
 ## Reproducibility
 
@@ -251,8 +242,8 @@ and published results cannot be checked.
 The library has no shared state, no database, no session. Every `repair()`
 call is self-contained.
 
-The library makes no outbound network calls except to the validator, the
-LLM, and the terminology server you configure. There is no analytics, no
+The library makes no outbound network calls except to the validator and
+the LLM you configure. There is no analytics, no
 phone-home, no version check. This is what makes the legal posture work:
 "deployable in HIPAA-compliant environments per deployer's configuration"
 is only true if there are no surprise endpoints.

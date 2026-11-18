@@ -1,10 +1,7 @@
-"""FHIRPath helper.
+"""Path helper for the error locations HAPI reports.
 
 Three operations are exposed:
 
-  - `evaluate(resource, path)`: full FHIRPath evaluation via `fhirpathpy`.
-    Returns a flat collection per FHIRPath semantics. Used by RAG and any
-    place that wants FHIRPath query semantics.
   - `get_at_path(resource, path)` and `set_at_path(resource, path, value)`:
     direct dict walks symmetric with each other, used by repair strategies
     that need to inspect or assign the *raw* value at a path.
@@ -13,11 +10,10 @@ Three operations are exposed:
     forbids two fields coexisting is satisfied by dropping one of them, and
     writing a null in its place would leave the resource just as invalid.
 
-Why two surfaces: FHIRPath is a query language and flattens collections.
-That is correct for spec-lookup queries but wrong for cardinality fixes,
-where the strategy needs to see "this scalar field has been wrapped in a
-list" and not have FHIRPath silently unwrap the list before the strategy
-sees it. Walking the dict directly preserves the raw structure.
+These walk the dict rather than evaluating FHIRPath, because FHIRPath is a
+query language and flattens collections. A cardinality fix needs to see
+"this scalar field has been wrapped in a list", which FHIRPath would
+silently unwrap before the strategy saw it.
 
 HAPI emits error locations using a small syntactic subset (member access
 plus integer indices), so we parse that subset directly. General FHIRPath
@@ -28,8 +24,6 @@ from __future__ import annotations
 
 import re
 from typing import Any
-
-import fhirpathpy
 
 # Matches a path segment: `name`, `name[42]`, or `name[x]`.
 _SEGMENT_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)(?:\[(\d+|x)\])?$")
@@ -87,22 +81,11 @@ class Choice:
         return f"Choice({self.base!r})"
 
 
-def evaluate(resource: dict[str, Any], path: str) -> list[Any]:
-    """Evaluate a FHIRPath expression against a resource.
-
-    Returns a list because FHIRPath always returns a collection. An empty
-    list means the path matched nothing. Note: FHIRPath flattens collections,
-    so `Observation.status` against `{"status": ["final"]}` returns
-    `["final"]` flat. Use `get_at_path` if you want to see the raw list.
-    """
-    return list(fhirpathpy.evaluate(resource, path))
-
-
 def get_at_path(resource: dict[str, Any], path: str) -> Any:
     """Return the raw value at `path` on `resource`, or None if absent.
 
-    Walks the resource as a plain dict tree. Unlike `evaluate`, this does
-    not apply FHIRPath collection flattening: a singleton-wrapped scalar
+    Walks the resource as a plain dict tree, without FHIRPath collection
+    flattening: a singleton-wrapped scalar
     comes back as a one-element list, which is what cardinality fixes
     need to see.
 

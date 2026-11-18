@@ -1,7 +1,6 @@
 """Generic LLM strategy runner.
 
-Wraps a prompt template, an LLMProvider, and (optionally) a RAG retriever
-into a `Strategy`. The runner handles:
+Wraps a prompt template and an LLMProvider into a `Strategy`. The runner handles:
 
   - Loading and rendering the prompt template
   - Calling the provider with a structured PromptSegment list, marking
@@ -27,7 +26,7 @@ from typing import Any
 from jinja2 import Template
 
 from fhir_repair.core.audit import hash_prompt
-from fhir_repair.core.fhirpath import delete_at_path, get_at_path, set_at_path
+from fhir_repair.core.fhirpath import get_at_path, set_at_path
 from fhir_repair.core.models import (
     PromptSegment,
     RepairAction,
@@ -35,31 +34,14 @@ from fhir_repair.core.models import (
 )
 from fhir_repair.llm.base import Completion, LLMProvider
 from fhir_repair.strategies.base import refused
-from fhir_repair.strategies.llm.rag import SpecRetriever
 
 logger = logging.getLogger(__name__)
 
 
-class _Delete:
-    """Sentinel meaning "remove the element at the error path".
-
-    A distinct object rather than None because None already means "the model
-    declined to answer" and is handled as a refusal. Some fixes really are a
-    removal: an invariant forbidding two fields from coexisting is satisfied
-    by dropping one, and writing null in its place leaves the resource
-    invalid.
-    """
-
-    def __repr__(self) -> str:  # pragma: no cover - debugging aid
-        return "DELETE"
-
-
-DELETE = _Delete()
-
 # Type for a parser that takes the LLM's raw text and returns the new value
 # at the error location. May raise to signal "could not parse" or
-# "untrustworthy output"; the runner converts that into a refusal. May also
-# return the DELETE sentinel to request removal instead of replacement.
+# "untrustworthy output"; the runner converts that into a refusal. Removals
+# are the invariant strategy's job, which checks the element it removes.
 ResponseParser = Callable[[str], Any]
 
 
@@ -88,7 +70,6 @@ class LLMStrategy:
         prompt_path: Path,
         prompt_version: str,
         provider: LLMProvider,
-        retriever: SpecRetriever | None = None,
         parser: ResponseParser = _default_parser,
         system_prompt: str | None = None,
         max_retries: int = 3,
@@ -104,7 +85,6 @@ class LLMStrategy:
         self._template = Template(prompt_path.read_text(encoding="utf-8"))
         self._prompt_version = prompt_version
         self._provider = provider
-        self._retriever = retriever
         self._parser = parser
         self._system_prompt = system_prompt or _DEFAULT_SYSTEM_PROMPT
         self._max_retries = max_retries
@@ -128,11 +108,8 @@ class LLMStrategy:
             # rather than Quantity.code, say). A strategy that answers with
             # a code would overwrite the whole structure with a bare string,
             # which is worse than the error it was fixing.
-            return refused(
+            return self._refuse(
                 error,
-                self.name,
-                self.version,
-                self.permission,
                 before,
                 (
                     f"error location {error.location!r} holds a "
@@ -140,27 +117,21 @@ class LLMStrategy:
                 ),
             )
 
-        spec_excerpt = ""
-        if self._retriever is not None:
-            spec_excerpt = self._retriever.retrieve(error)
-
+        # The v1 templates keep a conditional spec-excerpt block from a
+        # retrieval step that was never built. With no excerpt it renders
+        # nothing, and editing the files would make them a new prompt version.
         rendered = self._template.render(
             resource=json.dumps(resource, separators=(",", ":")),
             error=error,
-            spec_excerpt=spec_excerpt,
             current_value=before,
         )
 
-        # Stable segments (cacheable across calls) come first; volatile
-        # segments (per-resource content) come last. Anthropic caches the
-        # prefix up to and including the last stable segment; OpenAI auto-
-        # caches whatever prefix happens to repeat.
+        # The stable system prompt comes first so providers that cache a
+        # repeated prefix can reuse it; the per-resource part comes last.
         segments = [
             PromptSegment(role="system", text=self._system_prompt, stable=True),
+            PromptSegment(role="user", text=rendered, stable=False),
         ]
-        if spec_excerpt:
-            segments.append(PromptSegment(role="system", text=spec_excerpt, stable=True))
-        segments.append(PromptSegment(role="user", text=rendered, stable=False))
 
         try:
             completion = call_with_retry(
@@ -171,72 +142,31 @@ class LLMStrategy:
                 backoff_max_s=self._backoff_max_s,
             )
         except Exception as exc:
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                f"LLM call failed: {exc}",
-            )
+            return self._refuse(error, before, f"LLM call failed: {exc}")
 
         try:
             new_value = self._parser(completion.text)
         except Exception as exc:
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                f"could not parse LLM response: {exc}",
-            )
+            return self._refuse(error, before, f"could not parse LLM response: {exc}")
 
         if new_value is None:
             # The system prompt asks the model to answer {"value": null} when
             # it cannot determine the fix with confidence. Honour that as a
             # refusal instead of writing a literal null over the resource.
-            return refused(
-                error,
-                self.name,
-                self.version,
-                self.permission,
-                before,
-                "LLM returned null, signalling it could not determine the value",
+            return self._refuse(
+                error, before, "LLM returned null, signalling it could not determine the value"
             )
 
-        if new_value is DELETE:
-            if not delete_at_path(resource, error.location):
-                return refused(
-                    error,
-                    self.name,
-                    self.version,
-                    self.permission,
-                    before,
-                    "LLM asked to remove an element that is not present",
-                )
-            after: Any = None
-            removed = True
-            explanation = f"LLM ({completion.model}) removed the element at the error path."
-        else:
-            try:
-                set_at_path(resource, error.location, new_value)
-            except ValueError as exc:
-                # Some errors are reported against the resource itself rather
-                # than a field (invariants, whole-resource constraints), so
-                # there is no path to assign to. That is a refusal, not a
-                # crash: raising here would abort a whole benchmark run.
-                return refused(
-                    error,
-                    self.name,
-                    self.version,
-                    self.permission,
-                    before,
-                    f"cannot write to error location {error.location!r}: {exc}",
-                )
-            after = new_value
-            removed = False
-            explanation = f"LLM ({completion.model}) produced replacement value."
+        try:
+            set_at_path(resource, error.location, new_value)
+        except ValueError as exc:
+            # Some errors are reported against the resource itself rather
+            # than a field (invariants, whole-resource constraints), so
+            # there is no path to assign to. That is a refusal, not a
+            # crash: raising here would abort a whole benchmark run.
+            return self._refuse(
+                error, before, f"cannot write to error location {error.location!r}: {exc}"
+            )
 
         action = RepairAction(
             error=error,
@@ -245,12 +175,14 @@ class LLMStrategy:
             risk=self.risk,  # type: ignore[arg-type]
             permission_used=self.permission,
             before=before,
-            after=after,
-            removed=removed,
-            explanation=explanation,
+            after=new_value,
+            explanation=f"LLM ({completion.model}) produced replacement value.",
             llm=llm_provenance(completion, self._prompt_version, rendered),
         )
         return action
+
+    def _refuse(self, error: ValidationError, before: Any, reason: str) -> RepairAction:
+        return refused(error, self.name, self.version, self.permission, before, reason)
 
 
 def call_with_retry(
@@ -360,7 +292,6 @@ def register_default_llm_strategies(
     registry: Any,
     provider: LLMProvider,
     prompt_version: str = "v1",
-    retriever: SpecRetriever | None = None,
     max_retries: int = 3,
     backoff_base_s: float = 1.0,
     backoff_max_s: float = 30.0,
@@ -396,7 +327,6 @@ def register_default_llm_strategies(
             prompt_path=_PROMPTS_DIR / "repair_terminology.v1.jinja",
             prompt_version=prompt_version,
             provider=provider,
-            retriever=retriever,
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,
@@ -424,7 +354,6 @@ def register_default_llm_strategies(
             prompt_path=_PROMPTS_DIR / "repair_unknown.v1.jinja",
             prompt_version=prompt_version,
             provider=provider,
-            retriever=retriever,
             max_retries=max_retries,
             backoff_base_s=backoff_base_s,
             backoff_max_s=backoff_max_s,

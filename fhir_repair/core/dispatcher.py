@@ -23,8 +23,7 @@ import copy
 from dataclasses import dataclass
 from typing import Any
 
-from fhir_repair.core.guard import HallucinationGuard
-from fhir_repair.core.models import RepairAction, ValidationError
+from fhir_repair.core.models import ValidationError
 
 # A strategy plan entry is (chain, error). `chain` is an ordered list of
 # strategy ids; the repairer tries each in order until one does not refuse.
@@ -124,11 +123,9 @@ def _strategy_priority(strategy_id: str) -> int:
     """Lower priority runs first. Deterministic strategies come before LLM."""
     if strategy_id.startswith("deterministic."):
         return 0
-    if strategy_id == "refuse":
-        return 1
     if strategy_id.startswith("llm"):
-        return 2
-    return 3
+        return 1
+    return 2
 
 
 def detect_regressions(
@@ -194,19 +191,6 @@ def is_stuck(prev: list[ValidationError], curr: list[ValidationError]) -> bool:
 
 def _error_signature(errors: list[ValidationError]) -> set[tuple[str, str]]:
     return {(e.code, e.location) for e in errors}
-
-
-def check_permission(
-    action: RepairAction | None,
-    permission: str,
-    guard: HallucinationGuard,
-) -> bool:
-    """Return True if the guard grants `permission`.
-
-    Pulled out for testability. The dispatcher consults this before running
-    a strategy that declares a `permission` requirement.
-    """
-    return guard.is_allowed(permission)
 
 
 def snapshot(resource: dict[str, Any]) -> dict[str, Any]:

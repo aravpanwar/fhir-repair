@@ -66,6 +66,15 @@ def test_fix_writes_the_repaired_resource(files):
     assert "1 fixes applied, 0 refused; 0 errors unresolved" in result.output
 
 
+def test_fix_without_a_config_uses_the_default_table(files):
+    # The fake validator reports the date error as `processing`, as HAPI does.
+    result = runner.invoke(cli.app, ["fix", "patient.json", "-o", "fixed.json"])
+
+    assert result.exit_code == 0, result.output
+    fixed = json.loads((files / "fixed.json").read_text(encoding="utf-8"))
+    assert fixed["birthDate"] == "1937-04-27"
+
+
 def test_fix_exits_1_when_errors_remain(files):
     (files / "config.yaml").write_text("strategies: {}\n", encoding="utf-8")
 

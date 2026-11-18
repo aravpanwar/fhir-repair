@@ -101,8 +101,7 @@ class PromptSegment:
     """A piece of a prompt sent to an LLM provider.
 
     The `stable` flag is a hint to the provider adapter: when True, this
-    segment repeats across many calls (system prompt, retrieved spec
-    excerpt). Provider adapters that have a native caching primitive
+    segment repeats across many calls (the system prompt). Provider adapters that have a native caching primitive
     (Anthropic `cache_control`, Bedrock equivalents) will apply it. Adapters
     where caching is automatic (OpenAI prefix caching, vLLM) ignore the hint.
 

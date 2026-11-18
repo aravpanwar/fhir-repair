@@ -49,3 +49,26 @@ def test_llm_dispatch_without_provider_is_allowed():
     is unset in config."""
     config = RepairConfig(strategies={"invalid-code-binding": "llm.suggest_terminology_match"})
     assert config.llm.provider is None
+
+
+def test_default_dispatch_table_tries_every_deterministic_strategy():
+    # With an empty default the README quickstart, and the CLI without
+    # --config, fixed nothing: HAPI reports these errors as `processing`.
+    chain = RepairConfig().strategies["processing"]
+
+    assert isinstance(chain, list)
+    assert all(sid.startswith("deterministic.") for sid in chain)
+    assert "deterministic.normalize_date" in chain
+
+
+def test_a_configured_dispatch_table_replaces_the_default():
+    config = RepairConfig(strategies={"value": "deterministic.normalize_date"})
+
+    assert config.strategies == {"value": "deterministic.normalize_date"}
+
+
+def test_default_dispatch_tables_are_not_shared():
+    first = RepairConfig()
+    first.strategies["processing"].append("llm")
+
+    assert "llm" not in RepairConfig().strategies["processing"]

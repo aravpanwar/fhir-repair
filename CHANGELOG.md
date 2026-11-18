@@ -39,6 +39,29 @@
   output tokens, matching the Anthropic adapter.
 - The CLI exits 2 when it cannot run, keeping 1 for errors left unresolved.
 - Supports anthropic 2.x, openai 3.x and typer up to 0.29.
+- A config without `strategies` now uses a default table that chains every
+  deterministic strategy under `processing`, the code HAPI uses for
+  malformed values. Before, the table was empty, so the README quickstart
+  and the CLI without `--config` fixed nothing.
+- The `deepseek` provider defaults to `deepseek-flash`. DeepSeek retired
+  V4 Flash on 2026-09-10 and routes `deepseek-v4-flash` to its successor
+  only temporarily.
+- `OnPremProvider` moved into `fhir_repair.llm.openai`, as a subclass of
+  `OpenAIProvider`; `fhir_repair.llm.on_prem` is gone.
+
+### Removed
+
+- **Breaking for config files:** `llm.temperature`, `logging.log_level` and
+  the `terminology` section. None of them was read, and a config that still
+  sets one now fails to load.
+- The `fhir_repair.terminology` package and the `specs/` code system index,
+  which no strategy used.
+- The spec retriever (`strategies.llm.rag`), which never had an index to
+  read. The prompt templates are unchanged.
+- `fhirpath.evaluate` and the `fhirpathpy` dependency, used only by the
+  retriever.
+- The `DELETE` sentinel, `dispatcher.check_permission` and the empty
+  `fhir_repair._internal` package.
 
 ## 0.2.0 - 2026-10-08
 

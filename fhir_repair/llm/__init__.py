@@ -65,9 +65,11 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
         # OpenAI adapter drives it unchanged. It gets its own branch rather
         # than being a documented `openai` + endpoint recipe so the audit
         # log and the leaderboard record which vendor actually answered.
+        # `deepseek-flash` is the current Flash id; DeepSeek retired V4 Flash
+        # on 2026-09-10 and only temporarily routes `deepseek-v4-flash` to it.
         return OpenAIProvider(
             api_key=config.api_key or None,
-            model=config.model or "deepseek-v4-flash",
+            model=config.model or "deepseek-flash",
             endpoint=config.endpoint or "https://api.deepseek.com/v1",
             provider_name="deepseek",
         )
@@ -84,7 +86,7 @@ def build_llm_provider(config: LLMConfig) -> LLMProvider:
         )
 
     if provider == "on-prem":
-        from fhir_repair.llm.on_prem import OnPremProvider
+        from fhir_repair.llm.openai import OnPremProvider
 
         # No model default: the name has to match whatever the local server
         # serves, and guessing would produce a confusing 404 from the

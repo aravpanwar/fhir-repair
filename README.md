@@ -30,7 +30,7 @@ takes in a machine-readable audit log.
    deterministic fix, LLM fix, refuse, or escalate to human review.
 4. **Apply** deterministic strategies in depth-ordered batches (pure
    functions, no IO), re-validate, then queue any remaining errors for the
-   LLM with a retrieved spec excerpt and a hallucination guard.
+   LLM behind a hallucination guard.
 5. **Re-validate** after each round. Roll back any fix that introduces a new
    error. Halt when valid, when budget is exhausted, or when the error set
    stops changing.
@@ -114,19 +114,23 @@ See [examples/quickstart.md](examples/quickstart.md) for a complete walkthrough.
 
 ## Configuration
 
-Strategy choices, LLM endpoint, hallucination guard permissions, and
-terminology service are all set in a single YAML file:
+Strategy choices, the LLM endpoint and hallucination guard permissions are
+all set in a single YAML file:
 
 ```yaml
 target_profile: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
 fhir_version: "4.0.1"
 
 strategies:
-  invalid-date-format: deterministic.normalize_date
-  invalid-decimal-format: deterministic.normalize_decimal
-  unexpected-array: deterministic.unwrap_singleton
-  invalid-code-binding: llm.suggest_terminology_match
-  missing-required-element: refuse
+  # HAPI reports most malformed values with the code `processing`. Each
+  # strategy in the chain refuses when the value is not its kind, and the
+  # next one is tried.
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+    - llm.suggest_terminology_match
+  unknown-error: refuse
 
 llm:
   provider: ${LLM_PROVIDER}
@@ -142,7 +146,11 @@ hallucination_guard:
   allow_change_existing_clinical_value: false
 ```
 
-See [examples/repair-config.yaml](examples/repair-config.yaml) for the full
+Without a `strategies` section, every deterministic strategy is chained
+under `processing`, so the library and the CLI fix wire-format errors with no
+config at all, and nothing is sent to an LLM. A `strategies` section replaces
+that default rather than adding to it. See
+[examples/repair-config.yaml](examples/repair-config.yaml) for the full
 reference.
 
 The guard authorizes which class of change a strategy may attempt, but does
@@ -198,6 +206,4 @@ makes no claim to be, HIPAA-certified.
 ## Acknowledgements
 
 This project uses [Synthea](https://github.com/synthetichealth/synthea) for
-synthetic test data, the [HAPI FHIR](https://hapifhir.io/) validator, and
-[fhirpathpy](https://github.com/beda-software/fhirpath-py) for FHIRPath
-evaluation.
+synthetic test data and the [HAPI FHIR](https://hapifhir.io/) validator.
