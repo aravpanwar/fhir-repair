@@ -25,6 +25,7 @@ import json
 import random
 import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -48,11 +49,14 @@ def run_benchmark(
     sample: int | None = None,
     sample_seed: int = SAMPLE_SEED,
     label: str | None = None,
+    workers: int = 1,
 ) -> dict[str, Any]:
     """Run the tool against every entry in the manifest and compute metrics.
 
     With `sample`, run a class-stratified subset of that many cases instead,
-    for a pilot that measures token use before a full run.
+    for a pilot that measures token use before a full run. `workers` runs
+    that many cases at once; per-case latency then includes contention for
+    the validator and the LLM, so compare latency only at equal `workers`.
     """
     manifests = json.loads(manifest_path.read_text(encoding="utf-8"))
     if sample is not None:
@@ -61,42 +65,43 @@ def run_benchmark(
     validator = HapiRestValidator(base_url=hapi_url) if hapi_url else HapiRestValidator()
     repairer = Repairer(validator=validator, config=config)
 
-    results: list[dict[str, Any]] = []
+    def run_case(manifest: dict[str, Any]) -> dict[str, Any]:
+        mutated = json.loads(Path(manifest["mutated_path"]).read_text(encoding="utf-8"))
+        valid = json.loads(Path(manifest["valid_path"]).read_text(encoding="utf-8"))
+
+        # Did the validator flag the corruption at all? A mutation the
+        # validator accepts never reaches a strategy, so scoring it as a
+        # repair would credit the tool for doing nothing. Recorded per
+        # case rather than assumed per class, because whether a given
+        # corruption is detected depends on the validator and profile.
+        detected = bool(validator.validate(mutated, config.target_profile))
+
+        t0 = time.perf_counter()
+        outcome = repairer.repair(mutated)
+        duration_ms = int((time.perf_counter() - t0) * 1000)
+
+        fixed = outcome.fixed_resource
+        return {
+            "mutation": manifest["mutation"],
+            "description": manifest["description"],
+            "location": manifest["location"],
+            "validator_detected": detected,
+            "passed_validator": len(outcome.unresolved) == 0,
+            "matches_ground_truth": fixed == valid,
+            "actions_taken": len(outcome.audit),
+            "actions_refused": sum(1 for a in outcome.audit if a.risk == "refused"),
+            "duration_ms": duration_ms,
+            **llm_usage(outcome.audit),
+            "collateral_changes": collateral_changes(mutated, fixed, valid),
+            **deleted_value_outcome(manifest["location"], mutated, fixed, valid),
+        }
+
     start = time.perf_counter()
-
     try:
-        for manifest in manifests:
-            mutated = json.loads(Path(manifest["mutated_path"]).read_text(encoding="utf-8"))
-            valid = json.loads(Path(manifest["valid_path"]).read_text(encoding="utf-8"))
-
-            # Did the validator flag the corruption at all? A mutation the
-            # validator accepts never reaches a strategy, so scoring it as a
-            # repair would credit the tool for doing nothing. Recorded per
-            # case rather than assumed per class, because whether a given
-            # corruption is detected depends on the validator and profile.
-            detected = bool(validator.validate(mutated, config.target_profile))
-
-            t0 = time.perf_counter()
-            outcome = repairer.repair(mutated)
-            duration_ms = int((time.perf_counter() - t0) * 1000)
-
-            fixed = outcome.fixed_resource
-            results.append(
-                {
-                    "mutation": manifest["mutation"],
-                    "description": manifest["description"],
-                    "location": manifest["location"],
-                    "validator_detected": detected,
-                    "passed_validator": len(outcome.unresolved) == 0,
-                    "matches_ground_truth": fixed == valid,
-                    "actions_taken": len(outcome.audit),
-                    "actions_refused": sum(1 for a in outcome.audit if a.risk == "refused"),
-                    "duration_ms": duration_ms,
-                    **llm_usage(outcome.audit),
-                    "collateral_changes": collateral_changes(mutated, fixed, valid),
-                    **deleted_value_outcome(manifest["location"], mutated, fixed, valid),
-                }
-            )
+        # The Repairer keeps no per-case state and its HTTP clients are
+        # thread-safe, so cases can share it. Results keep manifest order.
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            results = list(pool.map(run_case, manifests))
     finally:
         validator.close()
 
@@ -115,6 +120,7 @@ def run_benchmark(
             "llm_options": config.llm.options,
             "sample": sample,
             "sample_seed": sample_seed if sample is not None else None,
+            "workers": workers,
         },
     }
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -352,6 +358,12 @@ def main() -> None:
     )
     parser.add_argument("--sample-seed", type=int, default=SAMPLE_SEED)
     parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Cases to run at once. Latency is comparable only at equal workers.",
+    )
+    parser.add_argument(
         "--label",
         default=None,
         help="Name for this run; repeats of one arm share a label. Defaults to the model id.",
@@ -368,6 +380,7 @@ def main() -> None:
         sample=args.sample,
         sample_seed=args.sample_seed,
         label=args.label,
+        workers=args.workers,
     )
     print(json.dumps(payload["summary"], indent=2))
 

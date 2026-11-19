@@ -1,0 +1,31 @@
+# The hybrid arm with DeepSeek's thinking turned off, otherwise identical.
+# Arm 2: deterministic strategies first, then the same LLM tail as the
+# llm-only arm. The two arms differ only in the deterministic prefix.
+#
+# llm.resolve_invariant refuses anything that is not an invariant failure
+# before calling the model, so it costs nothing on other errors.
+strategies:
+  processing:
+    - deterministic.normalize_date
+    - deterministic.normalize_decimal
+    - deterministic.unwrap_singleton
+    - deterministic.normalize_telecom
+    - deterministic.normalize_codeable_concept
+    - deterministic.canonicalize_identifier_system
+    - llm.resolve_invariant
+    - llm
+
+llm:
+  provider: ${LLM_PROVIDER}
+  model: ${LLM_MODEL}
+  api_key: ${LLM_API_KEY}
+  # DeepSeek thinks by default and thinking counts against the output cap.
+  # At the adapter's 1024 the pilot saw answers cut off mid-thought, which
+  # would score the config rather than the model.
+  options:
+    max_tokens: 8000
+    reasoning_effort: none        # DeepSeek: thinking off
+
+# The invariant strategy removes submitted data, which needs this.
+hallucination_guard:
+  allow_change_existing_clinical_value: true
