@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -29,7 +30,13 @@ from typing import Any
 
 from fhir_repair import Repairer
 from fhir_repair.core.config import RepairConfig, load_config
+from fhir_repair.core.fhirpath import get_at_path
+from fhir_repair.core.models import RepairAction
 from fhir_repair.validators.hapi import HapiRestValidator
+
+# Seed for choosing a pilot sample. Separate from the mutation seed, which
+# fixes the published corpus and must not change.
+SAMPLE_SEED = 27373
 
 
 def run_benchmark(
@@ -38,9 +45,18 @@ def run_benchmark(
     config: RepairConfig,
     output_path: Path,
     hapi_url: str | None = None,
+    sample: int | None = None,
+    sample_seed: int = SAMPLE_SEED,
+    label: str | None = None,
 ) -> dict[str, Any]:
-    """Run the tool against every entry in the manifest and compute metrics."""
+    """Run the tool against every entry in the manifest and compute metrics.
+
+    With `sample`, run a class-stratified subset of that many cases instead,
+    for a pilot that measures token use before a full run.
+    """
     manifests = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if sample is not None:
+        manifests = stratified_sample(manifests, sample, sample_seed)
 
     validator = HapiRestValidator(base_url=hapi_url) if hapi_url else HapiRestValidator()
     repairer = Repairer(validator=validator, config=config)
@@ -64,6 +80,7 @@ def run_benchmark(
             outcome = repairer.repair(mutated)
             duration_ms = int((time.perf_counter() - t0) * 1000)
 
+            fixed = outcome.fixed_resource
             results.append(
                 {
                     "mutation": manifest["mutation"],
@@ -71,10 +88,13 @@ def run_benchmark(
                     "location": manifest["location"],
                     "validator_detected": detected,
                     "passed_validator": len(outcome.unresolved) == 0,
-                    "matches_ground_truth": outcome.fixed_resource == valid,
+                    "matches_ground_truth": fixed == valid,
                     "actions_taken": len(outcome.audit),
                     "actions_refused": sum(1 for a in outcome.audit if a.risk == "refused"),
                     "duration_ms": duration_ms,
+                    **llm_usage(outcome.audit),
+                    "collateral_changes": collateral_changes(mutated, fixed, valid),
+                    **deleted_value_outcome(manifest["location"], mutated, fixed, valid),
                 }
             )
     finally:
@@ -86,10 +106,118 @@ def run_benchmark(
     payload = {
         "summary": summary,
         "results": results,
-        "metadata": repairer._metadata(),
+        "metadata": {
+            **repairer._metadata(),
+            # Enough to tell arms apart and rerun one: the dispatch table
+            # decides which arm this is, and the options shape every call.
+            "label": label,
+            "strategies": config.strategies,
+            "llm_options": config.llm.options,
+            "sample": sample,
+            "sample_seed": sample_seed if sample is not None else None,
+        },
     }
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload
+
+
+def stratified_sample(
+    manifests: list[dict[str, Any]], size: int, seed: int = SAMPLE_SEED
+) -> list[dict[str, Any]]:
+    """Pick `size` cases spread as evenly as possible over mutation classes.
+
+    Classes are visited in turn, each contributing its next case from a
+    seeded shuffle, so a small pilot still covers every class rather than
+    mostly the two 100-case classes.
+    """
+    rng = random.Random(seed)
+    by_class: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for manifest in manifests:
+        by_class[manifest["mutation"]].append(manifest)
+    queues = []
+    for name in sorted(by_class):
+        cases = list(by_class[name])
+        rng.shuffle(cases)
+        queues.append(cases)
+
+    picked: list[dict[str, Any]] = []
+    while len(picked) < size and any(queues):
+        for queue in queues:
+            if queue and len(picked) < size:
+                picked.append(queue.pop(0))
+    return picked
+
+
+def llm_usage(audit: list[RepairAction]) -> dict[str, Any]:
+    """LLM calls and tokens for one case, from the audit's provenance blocks.
+
+    Each LLM strategy invocation that reached the provider leaves one block,
+    applied or refused. Retries inside an invocation are not visible here.
+    """
+    blocks = [action.llm for action in audit if action.llm]
+    return {
+        "llm_calls": len(blocks),
+        "input_tokens": sum(int(b.get("input_tokens", 0)) for b in blocks),
+        "output_tokens": sum(int(b.get("output_tokens", 0)) for b in blocks),
+        "cached_tokens": sum(int(b.get("cached_tokens", 0)) for b in blocks),
+        "llm_models": sorted({str(b["model"]) for b in blocks if b.get("model")}),
+    }
+
+
+_ABSENT = object()
+
+
+def collateral_changes(
+    mutated: dict[str, Any], fixed: dict[str, Any], valid: dict[str, Any]
+) -> list[str]:
+    """Paths the repair changed although the mutation had left them correct.
+
+    Ground truth alone cannot separate "missed the fix" from "broke
+    something else". A leaf counts here when the repaired value differs from
+    the mutated one while the mutated one still equalled the original, so
+    the mutation's own path never counts and a correct fix never counts.
+    """
+    before, after, truth = _leaves(mutated), _leaves(fixed), _leaves(valid)
+    return sorted(
+        path
+        for path in before.keys() | after.keys()
+        if after.get(path, _ABSENT) != before.get(path, _ABSENT)
+        and before.get(path, _ABSENT) == truth.get(path, _ABSENT)
+    )
+
+
+def deleted_value_outcome(
+    location: str, mutated: dict[str, Any], fixed: dict[str, Any], valid: dict[str, Any]
+) -> dict[str, bool | None]:
+    """Whether a value was written where the mutation deleted one.
+
+    Nothing in the input says what a deleted field held, so any value
+    written there is invented, even one that happens to match the original
+    (a guess from context). Both fields are None when the case did not
+    delete a value.
+    """
+    if get_at_path(mutated, location) is not None or get_at_path(valid, location) is None:
+        return {"deleted_value_written": None, "deleted_value_matches": None}
+    written = get_at_path(fixed, location)
+    return {
+        "deleted_value_written": written is not None,
+        "deleted_value_matches": written is not None and written == get_at_path(valid, location),
+    }
+
+
+def _leaves(value: Any, prefix: str = "") -> dict[str, Any]:
+    """Flatten JSON to {dotted path: scalar}, keeping empty containers as leaves."""
+    if isinstance(value, dict) and value:
+        out: dict[str, Any] = {}
+        for key, item in value.items():
+            out.update(_leaves(item, f"{prefix}.{key}" if prefix else str(key)))
+        return out
+    if isinstance(value, list) and value:
+        out = {}
+        for index, item in enumerate(value):
+            out.update(_leaves(item, f"{prefix}[{index}]"))
+        return out
+    return {prefix: value}
 
 
 def _aggregate(results: list[dict[str, Any]], total_duration_ms: int) -> dict[str, Any]:
@@ -115,6 +243,14 @@ def _aggregate(results: list[dict[str, Any]], total_duration_ms: int) -> dict[st
         "total_duration_ms": total_duration_ms,
         "by_mutation": _by_mutation(results),
         "undetected_by_validator": undetected,
+        # Totals rather than rates: cost and harm are what a reader weighs
+        # against the pass rates. Older result files lack these fields.
+        "llm_calls": sum(r.get("llm_calls", 0) for r in results),
+        "input_tokens": sum(r.get("input_tokens", 0) for r in results),
+        "output_tokens": sum(r.get("output_tokens", 0) for r in results),
+        "cached_tokens": sum(r.get("cached_tokens", 0) for r in results),
+        "cases_with_collateral_changes": sum(1 for r in results if r.get("collateral_changes")),
+        "deleted_values_written": sum(1 for r in results if r.get("deleted_value_written")),
     }
 
     if detected and undetected:
@@ -209,9 +345,16 @@ def main() -> None:
         help="Append this run's summary to a cumulative leaderboard JSON file.",
     )
     parser.add_argument(
+        "--sample",
+        type=int,
+        default=None,
+        help="Run a class-stratified sample of this many cases (a pilot).",
+    )
+    parser.add_argument("--sample-seed", type=int, default=SAMPLE_SEED)
+    parser.add_argument(
         "--label",
         default=None,
-        help="Name for this run in the leaderboard. Defaults to the model id.",
+        help="Name for this run; repeats of one arm share a label. Defaults to the model id.",
     )
     args = parser.parse_args()
 
@@ -222,6 +365,9 @@ def main() -> None:
         config=config,
         output_path=args.out,
         hapi_url=args.hapi_url,
+        sample=args.sample,
+        sample_seed=args.sample_seed,
+        label=args.label,
     )
     print(json.dumps(payload["summary"], indent=2))
 

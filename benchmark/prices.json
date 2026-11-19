@@ -1,0 +1,6 @@
+{
+  "_source": "USD per 1M tokens at peak rates, from https://api-docs.deepseek.com/quick_start/pricing, read 2026-11-18. Off-peak is half. The retired deepseek-v4-flash id is billed at the Flash price.",
+  "deepseek-flash": {"input": 0.30, "cached_input": 0.006, "output": 1.20},
+  "deepseek-v4-flash": {"input": 0.30, "cached_input": 0.006, "output": 1.20},
+  "deepseek-v4-pro": {"input": 1.32, "cached_input": 0.044, "output": 3.96}
+}

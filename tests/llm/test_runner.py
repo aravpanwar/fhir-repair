@@ -86,6 +86,9 @@ def test_unparseable_response_is_refused():
     action = _strategy("not json").apply(resource, _error())
     assert action.risk == "refused"
     assert resource["gender"] == "M"
+    # The call happened and was paid for, so its tokens stay in the audit.
+    assert action.llm is not None
+    assert action.llm["input_tokens"] == 1
 
 
 def test_unwritable_error_location_is_refused():

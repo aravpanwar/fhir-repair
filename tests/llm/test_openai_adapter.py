@@ -140,3 +140,56 @@ def test_sdk_retries_are_off(fake_openai, monkeypatch):
     OpenAIProvider()
 
     assert fake_openai["init"]["max_retries"] == 0
+
+
+def test_options_reach_the_request(fake_openai, monkeypatch):
+    # Vendor settings such as DeepSeek's reasoning_effort have no SDK
+    # keyword, so they travel in the body; a null temperature sends none.
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.openai import OpenAIProvider
+
+    OpenAIProvider().complete(
+        [PromptSegment(role="user", text="hi", stable=False)],
+        max_tokens=4000,
+        temperature=None,
+        reasoning_effort="none",
+    )
+
+    request = fake_openai["request"]
+    assert request["max_tokens"] == 4000
+    assert "temperature" not in request
+    assert request["extra_body"] == {"reasoning_effort": "none"}
+
+
+def test_completion_records_the_model_the_server_reports(fake_openai, monkeypatch):
+    # DeepSeek serves a retired id from its successor; the audit should say
+    # which model actually answered.
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.openai import OpenAIProvider
+
+    provider = OpenAIProvider(model="requested-alias")
+    original_create = provider._client.chat.completions.create
+
+    def create(**kwargs):
+        response = original_create(**kwargs)
+        response.model = "served-model-1017"
+        return response
+
+    provider._client.chat.completions.create = create
+    completion = provider.complete([PromptSegment(role="user", text="hi", stable=False)])
+
+    assert completion.model == "served-model-1017"
+
+
+def test_deepseek_cache_hits_are_counted():
+    # DeepSeek reports cache hits in its own field; missing them overstates
+    # what a run cost.
+    from fhir_repair.llm.openai import _cached_tokens
+
+    class _DeepSeekUsage:
+        prompt_tokens_details = None
+        prompt_cache_hit_tokens = 640
+
+    assert _cached_tokens(_DeepSeekUsage()) == 640

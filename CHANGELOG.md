@@ -2,8 +2,28 @@
 
 ## Unreleased
 
+### Added
+
+- `llm.options`, passed to every provider call: `max_tokens` and
+  `temperature` override the adapter defaults (a null `temperature` sends
+  none), and other keys go to the vendor as given, such as DeepSeek's
+  `reasoning_effort`.
+- Benchmark runs record LLM calls and tokens, the model id the server
+  reported, fields changed that the mutation had left correct, and whether a
+  value was written where a field was deleted. `--sample` runs a
+  class-stratified pilot.
+- Benchmark arm configs under `benchmark/configs/` (deterministic, hybrid,
+  LLM only, and the published 0.2.0 table) and `benchmark.report`, which
+  turns run files into tables, with cost from `benchmark/prices.json`.
+
 ### Fixed
 
+- LLM refusals that followed a successful call dropped the call's tokens
+  from the audit log, understating cost.
+- DeepSeek cache hits were recorded as zero.
+- An error that an earlier fix had already cleared was still dispatched,
+  so the chain ran on a correct value and, with an LLM at its end, paid
+  for a call to rewrite it.
 - Rollback after a regression left the refused fix in the output, replayed
   an identifier system fix over the whole Identifier, and raised when
   replaying the removal of an element reported against the resource.
@@ -48,6 +68,8 @@
   only temporarily.
 - `OnPremProvider` moved into `fhir_repair.llm.openai`, as a subclass of
   `OpenAIProvider`; `fhir_repair.llm.on_prem` is gone.
+- The audit log's `llm.model` is the model id the server reports, which can
+  differ from the configured id when a provider routes an alias.
 
 ### Removed
 

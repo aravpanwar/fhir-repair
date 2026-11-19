@@ -168,3 +168,19 @@ def test_sdk_retries_are_off(fake_anthropic, monkeypatch):
     AnthropicProvider()
 
     assert fake_anthropic["init"]["max_retries"] == 0
+
+
+def test_vendor_options_go_in_the_body(fake_anthropic, monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+
+    from fhir_repair.llm.anthropic import AnthropicProvider
+
+    AnthropicProvider().complete(
+        [PromptSegment(role="user", text="hi", stable=False)],
+        temperature=None,
+        output_config={"effort": "low"},
+    )
+
+    request = fake_anthropic["request"]
+    assert "temperature" not in request
+    assert request["extra_body"] == {"output_config": {"effort": "low"}}

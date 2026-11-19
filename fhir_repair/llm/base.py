@@ -34,6 +34,16 @@ class Completion:
     provider: str = ""
 
 
+# Options every adapter maps onto its own request fields. Anything else in a
+# call's options is vendor-specific and is passed through unchanged.
+_STANDARD_OPTIONS = frozenset({"max_tokens", "temperature"})
+
+
+def vendor_options(options: dict[str, Any]) -> dict[str, Any]:
+    """The options an adapter should pass through to the vendor as given."""
+    return {key: value for key, value in options.items() if key not in _STANDARD_OPTIONS}
+
+
 @runtime_checkable
 class LLMProvider(Protocol):
     """Synchronous provider interface."""

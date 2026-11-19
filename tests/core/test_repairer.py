@@ -427,3 +427,32 @@ def test_repairer_without_config_fixes_processing_errors(tmp_path, monkeypatch):
 
     assert result.fixed_resource["birthDate"] == "1937-04-27"
     assert result.unresolved == []
+
+
+def test_an_error_cleared_by_an_earlier_batch_is_not_dispatched(tmp_path):
+    # A comma decimal raises two errors at different depths. Fixing the
+    # deeper one clears the other, which used to be dispatched anyway and
+    # fall through to whatever ends the chain, an LLM in the hybrid arm.
+    def rule(resource: dict[str, Any]) -> list[ValidationError]:
+        if resource["valueQuantity"]["value"] != "15,31":
+            return []
+        return [
+            _error("processing", "Observation.valueQuantity.value", "not a valid decimal"),
+            _error("processing", "Observation.valueQuantity", "must be a number"),
+        ]
+
+    class _LastResort(_CountingLLMStrategy):
+        name = "stub.last_resort"
+
+    fix = _Stub("stub.fix", "Observation.valueQuantity.value", 15.31)
+    last_resort = _LastResort()
+    registry_chain = {"processing": ["stub.fix", "stub.last_resort"]}
+    repairer = _repairer(tmp_path, _RuleValidator(rule), registry_chain, fix, last_resort)
+
+    result = repairer.repair(
+        {"resourceType": "Observation", "valueQuantity": {"value": "15,31", "unit": "mg"}}
+    )
+
+    assert result.fixed_resource["valueQuantity"]["value"] == 15.31
+    assert last_resort.calls == 0
+    assert [action.strategy for action in result.audit] == ["stub.fix"]

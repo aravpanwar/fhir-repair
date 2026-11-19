@@ -7,6 +7,8 @@ not here.
 
 from __future__ import annotations
 
+import pytest
+
 from benchmark import run
 
 
@@ -128,3 +130,128 @@ def test_append_to_leaderboard_accumulates(tmp_path):
     entries = run.append_to_leaderboard(_payload("model-b", 0.6), path, "model-b")
     assert len(entries) == 2
     assert [e["label"] for e in entries] == ["model-a", "model-b"]
+
+
+def _manifest(mutation: str, index: int) -> dict:
+    return {"mutation": mutation, "location": f"Patient.f{index}"}
+
+
+def test_stratified_sample_covers_every_class_and_repeats():
+    manifests = [_manifest("big", i) for i in range(100)] + [
+        _manifest(name, 0) for name in ("a", "b", "c")
+    ]
+
+    first = run.stratified_sample(manifests, 6)
+
+    assert len(first) == 6
+    assert {m["mutation"] for m in first} == {"a", "b", "c", "big"}
+    assert first == run.stratified_sample(manifests, 6)
+
+
+def test_llm_usage_sums_calls_and_tokens_including_refusals():
+    from fhir_repair.core.models import RepairAction, ValidationError
+
+    error = ValidationError("processing", "error", "Patient.gender", "")
+
+    def action(risk: str, llm: dict | None) -> RepairAction:
+        return RepairAction(error, "llm", "1", risk, "p", None, None, "", llm=llm)
+
+    block = {"input_tokens": 100, "output_tokens": 20, "cached_tokens": 5, "model": "m-1"}
+    usage = run.llm_usage([action("medium", block), action("refused", block), action("low", None)])
+
+    assert usage == {
+        "llm_calls": 2,
+        "input_tokens": 200,
+        "output_tokens": 40,
+        "cached_tokens": 10,
+        "llm_models": ["m-1"],
+    }
+
+
+VALID = {
+    "resourceType": "Observation",
+    "status": "final",
+    "valueQuantity": {"value": 72, "unit": "beats/min"},
+}
+
+
+@pytest.mark.parametrize(
+    "mutated, fixed, expected",
+    [
+        # A correct fix changes only what the mutation broke.
+        ({**VALID, "status": ["final"]}, VALID, []),
+        # A missed fix changes nothing.
+        ({**VALID, "status": "F"}, {**VALID, "status": "F"}, []),
+        # Removing the measurement instead of the added field is collateral.
+        (
+            {**VALID, "dataAbsentReason": {"text": "x"}},
+            {"resourceType": "Observation", "status": "final", "dataAbsentReason": {"text": "x"}},
+            ["valueQuantity.unit", "valueQuantity.value"],
+        ),
+        # Rewriting a value the mutation never touched is collateral.
+        (
+            {**VALID, "status": "F"},
+            {**VALID, "status": "final", "valueQuantity": {"value": 7}},
+            [
+                "valueQuantity.unit",
+                "valueQuantity.value",
+            ],
+        ),
+    ],
+)
+def test_collateral_changes(mutated, fixed, expected):
+    assert run.collateral_changes(mutated, fixed, VALID) == expected
+
+
+def test_deleted_value_outcome():
+    mutated = {"resourceType": "Observation", "valueQuantity": VALID["valueQuantity"]}
+    location = "Observation.status"
+
+    assert run.deleted_value_outcome(location, mutated, mutated, VALID) == {
+        "deleted_value_written": False,
+        "deleted_value_matches": False,
+    }
+    assert run.deleted_value_outcome(location, mutated, {**mutated, "status": "final"}, VALID) == {
+        "deleted_value_written": True,
+        "deleted_value_matches": True,
+    }
+    assert (
+        run.deleted_value_outcome(location, mutated, {**mutated, "status": "amended"}, VALID)[
+            "deleted_value_matches"
+        ]
+        is False
+    )
+    # Not a deletion: the field is still there in the mutated resource.
+    assert run.deleted_value_outcome(location, VALID, VALID, VALID) == {
+        "deleted_value_written": None,
+        "deleted_value_matches": None,
+    }
+
+
+def test_aggregate_totals_cost_and_harm():
+    results = [
+        {
+            **_result("a", True, True),
+            "llm_calls": 2,
+            "input_tokens": 10,
+            "output_tokens": 3,
+            "cached_tokens": 1,
+            "collateral_changes": ["x"],
+            "deleted_value_written": True,
+        },
+        {
+            **_result("a", True, True),
+            "llm_calls": 1,
+            "input_tokens": 5,
+            "output_tokens": 2,
+            "cached_tokens": 0,
+            "collateral_changes": [],
+            "deleted_value_written": None,
+        },
+    ]
+
+    summary = run._aggregate(results, 0)
+
+    assert (summary["llm_calls"], summary["input_tokens"], summary["output_tokens"]) == (3, 15, 5)
+    assert summary["cases_with_collateral_changes"] == 1
+    assert summary["deleted_values_written"] == 1

@@ -186,6 +186,9 @@ def test_unparseable_response_is_refused():
 
     assert action.risk == "refused"
     assert "dataAbsentReason" in resource
+    # The call happened and was paid for, so its tokens stay in the audit.
+    assert action.llm is not None
+    assert action.llm["output_tokens"] == 1
 
 
 def test_provider_failure_is_refused():

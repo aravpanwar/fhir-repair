@@ -86,6 +86,12 @@ llm:
   prompt_version: v1
   endpoint: ${LLM_ENDPOINT}        # required for on-prem; optional elsewhere
   api_key: ${LLM_API_KEY}
+  # Passed to the provider on every call. max_tokens and temperature
+  # override the adapter defaults (temperature: null sends none); any other
+  # key is sent to the vendor as given.
+  # options:
+  #   max_tokens: 8000
+  #   reasoning_effort: none        # DeepSeek: turn thinking off
 
 # Hallucination guard permissions. Each defaults conservatively. Turn one
 # on only after deciding the risk is acceptable for your deployment.

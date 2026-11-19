@@ -191,3 +191,11 @@ def test_temperature_is_sent_when_explicitly_requested(fake_boto3):
     )
 
     assert fake_boto3["request"]["inferenceConfig"]["temperature"] == 0.0
+
+
+def test_vendor_options_go_in_additional_model_request_fields(fake_boto3):
+    from fhir_repair.llm.bedrock import BedrockProvider
+
+    BedrockProvider().complete([PromptSegment(role="user", text="hi", stable=False)], top_k=5)
+
+    assert fake_boto3["request"]["additionalModelRequestFields"] == {"top_k": 5}

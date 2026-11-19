@@ -130,6 +130,7 @@ class Repairer:
             max_retries=self._config.llm.max_retries,
             backoff_base_s=self._config.llm.backoff_base_s,
             backoff_max_s=self._config.llm.backoff_max_s,
+            request_options=self._config.llm.options,
         )
 
     def repair(self, resource: dict[str, Any]) -> RepairResult:
@@ -207,6 +208,17 @@ class Repairer:
         all_actions: list[RepairAction] = []
 
         for batch in plan.batches:
+            # One corruption often raises two errors at different depths (a
+            # comma decimal is both "not a valid decimal" and "must be a
+            # number"), so fixing the deeper one clears the shallower one
+            # queued in a later batch. Dispatching it anyway runs its chain on
+            # a value that is already right: every deterministic strategy
+            # refuses and an LLM strategy is called to "fix" it.
+            current = set(errors)
+            batch = [(chain, error) for chain, error in batch if error in current]
+            if not batch:
+                continue
+
             before_state = snapshot(resource)
             actions = [self._invoke_chain(chain, resource, error, budget) for chain, error in batch]
             touched = {action.written_path for action in actions if action.risk != "refused"}
