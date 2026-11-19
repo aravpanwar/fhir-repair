@@ -7,6 +7,8 @@ not here.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from benchmark import run
@@ -255,3 +257,45 @@ def test_aggregate_totals_cost_and_harm():
     assert (summary["llm_calls"], summary["input_tokens"], summary["output_tokens"]) == (3, 15, 5)
     assert summary["cases_with_collateral_changes"] == 1
     assert summary["deleted_values_written"] == 1
+
+
+def test_concurrent_cases_keep_manifest_order(tmp_path, monkeypatch):
+    # run_benchmark talks to HAPI; a fake validator that reports nothing
+    # lets the ordering be checked without one.
+    class _Valid:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def validate(self, resource, profile=None):
+            return []
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(run, "HapiRestValidator", _Valid)
+    manifests = []
+    for i in range(12):
+        path = tmp_path / f"r{i}.json"
+        path.write_text(json.dumps({"resourceType": "Patient", "id": f"37-{i}"}), "utf-8")
+        manifests.append(
+            {
+                "mutation": f"m{i}",
+                "description": "d",
+                "location": "Patient.gender",
+                "mutated_path": str(path),
+                "valid_path": str(path),
+            }
+        )
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifests), "utf-8")
+
+    payload = run.run_benchmark(
+        corpus_dir=tmp_path,
+        manifest_path=manifest_path,
+        config=run.RepairConfig(logging={"audit_destination": str(tmp_path / "audit")}),
+        output_path=tmp_path / "out.json",
+        workers=4,
+    )
+
+    assert [r["mutation"] for r in payload["results"]] == [f"m{i}" for i in range(12)]
+    assert payload["metadata"]["workers"] == 4
