@@ -11,7 +11,7 @@
 - Benchmark runs record LLM calls and tokens, the model id the server
   reported, fields changed that the mutation had left correct, and whether a
   value was written where a field was deleted. `--sample` runs a
-  class-stratified pilot.
+  class-stratified pilot. `--workers N` runs cases concurrently.
 - Benchmark arm configs under `benchmark/configs/` (deterministic, hybrid,
   LLM only, and the published 0.2.0 table) and `benchmark.report`, which
   turns run files into tables, with cost from `benchmark/prices.json`.
@@ -21,6 +21,9 @@
 - LLM refusals that followed a successful call dropped the call's tokens
   from the audit log, understating cost.
 - DeepSeek cache hits were recorded as zero.
+- A transient HAPI failure (HAPI 7.4.0 sometimes answers concurrent
+  `$validate` calls with a 500) aborted a whole benchmark run. The validator
+  now retries connection errors, timeouts and 5xx.
 - An error that an earlier fix had already cleared was still dispatched,
   so the chain ran on a correct value and, with an LLM at its end, paid
   for a call to rewrite it.
