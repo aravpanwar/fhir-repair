@@ -164,3 +164,55 @@ def test_validate_against_running_hapi():
         validator.validate({"resourceType": "Patient", "id": "smoke"})
     finally:
         validator.close()
+
+
+@pytest.fixture
+def no_sleep(monkeypatch):
+    monkeypatch.setattr("fhir_repair.validators.hapi.time.sleep", lambda _: None)
+
+
+@respx.mock
+def test_a_transient_server_error_is_retried(no_sleep):
+    # HAPI 7.4.0 answers some concurrent $validate calls with a 500
+    # (HAPI-0331); one used to abort a whole benchmark run.
+    route = respx.post("http://example/fhir/Patient/$validate").mock(
+        side_effect=[
+            httpx.Response(500),
+            httpx.ConnectError("reset"),
+            httpx.Response(200, json=_outcome()),
+        ]
+    )
+    validator = HapiRestValidator(base_url="http://example/fhir")
+    try:
+        assert validator.validate({"resourceType": "Patient"}) == []
+    finally:
+        validator.close()
+    assert route.call_count == 3
+
+
+@respx.mock
+def test_retries_give_up_and_raise(no_sleep):
+    route = respx.post("http://example/fhir/Patient/$validate").mock(
+        return_value=httpx.Response(503)
+    )
+    validator = HapiRestValidator(base_url="http://example/fhir", max_retries=2)
+    try:
+        with pytest.raises(httpx.HTTPStatusError):
+            validator.validate({"resourceType": "Patient"})
+    finally:
+        validator.close()
+    assert route.call_count == 3
+
+
+@respx.mock
+def test_a_client_error_is_not_retried(no_sleep):
+    route = respx.post("http://example/fhir/Patient/$validate").mock(
+        return_value=httpx.Response(400)
+    )
+    validator = HapiRestValidator(base_url="http://example/fhir")
+    try:
+        with pytest.raises(httpx.HTTPStatusError):
+            validator.validate({"resourceType": "Patient"})
+    finally:
+        validator.close()
+    assert route.call_count == 1

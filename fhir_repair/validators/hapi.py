@@ -15,6 +15,7 @@ changes within minor releases.
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import httpx
@@ -45,8 +46,12 @@ class HapiRestValidator:
         base_url: str = DEFAULT_HAPI_URL,
         timeout: float = 30.0,
         client: httpx.Client | None = None,
+        max_retries: int = 3,
+        backoff_s: float = 0.5,
     ):
         self._base_url = base_url
+        self._max_retries = max_retries
+        self._backoff_s = backoff_s
         # Allowing the caller to inject a client makes testing easier
         # (respx can mock it) and lets advanced deployers configure TLS,
         # proxies, retries, etc.
@@ -65,19 +70,16 @@ class HapiRestValidator:
           - 422: validation errors found (body contains the error list)
 
         Both responses carry an OperationOutcome we need to parse. Other
-        non-2xx statuses (5xx, 4xx other than 422) indicate a server-side
-        problem unrelated to the resource's validity, and propagate.
+        non-2xx statuses indicate a server-side problem unrelated to the
+        resource's validity: 5xx is retried, and anything still failing
+        propagates.
         """
         resource_type = resource.get("resourceType")
         if not resource_type:
             raise ValueError("Resource has no 'resourceType' field")
 
         params = {"profile": profile} if profile else None
-        response = self._client.post(
-            f"/{resource_type}/$validate",
-            json=resource,
-            params=params,
-        )
+        response = self._post(f"/{resource_type}/$validate", resource, params)
 
         # 422 is the spec-compliant "validation failed" status from $validate;
         # parse its body as an OperationOutcome rather than treating it as
@@ -87,6 +89,30 @@ class HapiRestValidator:
 
         outcome = response.json()
         return _parse_outcome(outcome)
+
+    def _post(
+        self, url: str, resource: dict[str, Any], params: dict[str, str] | None
+    ) -> httpx.Response:
+        """POST to $validate, retrying failures that a second try can clear.
+
+        HAPI 7.4.0 sometimes answers concurrent $validate calls with a 500
+        (HAPI-0331, a ConcurrentModificationException inside the validator),
+        and one such answer used to abort a whole benchmark run. $validate
+        stores nothing, so repeating it is safe. Connection errors, timeouts
+        and 5xx are retried with a short backoff; 4xx answers are not.
+        """
+        attempt = 0
+        while True:
+            try:
+                response = self._client.post(url, json=resource, params=params)
+            except httpx.TransportError:
+                if attempt >= self._max_retries:
+                    raise
+            else:
+                if response.status_code < 500 or attempt >= self._max_retries:
+                    return response
+            time.sleep(self._backoff_s * 2**attempt)
+            attempt += 1
 
     def close(self) -> None:
         if self._owns_client:
