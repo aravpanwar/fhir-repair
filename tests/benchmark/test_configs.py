@@ -43,3 +43,12 @@ def test_hybrid_and_llm_only_send_the_same_llm_options():
     llm_only = load_config(CONFIGS / "llm-only.yaml").llm
     assert hybrid.options == llm_only.options
     assert hybrid.options["max_tokens"] > 1024
+
+
+@pytest.mark.parametrize("arm", ["hybrid", "llm-only"])
+def test_no_thinking_variants_differ_only_in_reasoning_effort(arm):
+    base = load_config(CONFIGS / f"{arm}.yaml")
+    variant = load_config(CONFIGS / f"{arm}-no-thinking.yaml")
+
+    assert variant.llm.options == {**base.llm.options, "reasoning_effort": "none"}
+    assert variant.model_dump(exclude={"llm"}) == base.model_dump(exclude={"llm"})

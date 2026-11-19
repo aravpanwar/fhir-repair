@@ -1,0 +1,21 @@
+# The llm-only arm with DeepSeek's thinking turned off, otherwise identical.
+# Arm 3: every error goes to the LLM; no deterministic strategy runs.
+# Same LLM tail and guard as the hybrid arm.
+strategies:
+  processing:
+    - llm.resolve_invariant
+    - llm
+
+llm:
+  provider: ${LLM_PROVIDER}
+  model: ${LLM_MODEL}
+  api_key: ${LLM_API_KEY}
+  # DeepSeek thinks by default and thinking counts against the output cap.
+  # At the adapter's 1024 the pilot saw answers cut off mid-thought, which
+  # would score the config rather than the model.
+  options:
+    max_tokens: 8000
+    reasoning_effort: none        # DeepSeek: thinking off
+
+hallucination_guard:
+  allow_change_existing_clinical_value: true
